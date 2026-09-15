@@ -1,0 +1,2892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FourFourTone</title>
+<!-- Nothing in the meta describes today's kits. Link previews must not spoil. -->
+<meta name="description" content="A daily colour game for football fans. Seven shirts, seven guesses, one round a day.">
+<meta property="og:title" content="FourFourTone">
+<meta property="og:description" content="A daily colour game for football fans. Seven shirts, seven guesses, one round a day.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0E0E10">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400;62..125,500;62..125,700&display=swap" rel="stylesheet">
+<style>  :root{
+    --ink:#0E0E10;
+    --raise:#17171A;
+    --raise2:#1F1F24;
+    --line:#43434A;
+    --edge:#5E5E66;
+    --stage:#76767A;
+    --on-stage:#131315;
+    --on-stage-2:#FFFFFF;
+    --text:#EAEAEC;
+    --muted:#8E8E95;
+    --quiet:#7C7C83;
+    --bad:#C46A6A;
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+    --radius:20px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--ink);color:var(--text);
+    font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+    display:flex;justify-content:center;
+    padding:0 var(--s4) env(safe-area-inset-bottom);
+  }
+  #app{width:100%;max-width:480px;display:flex;flex-direction:column;min-height:100%}
+
+  .display{font-weight:700;letter-spacing:-.045em;line-height:.92;font-variation-settings:'wdth' 112}
+  /* Condensed numerals. Football's own typography is the number on a shirt back. */
+  .numeral{font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+           line-height:.85;font-variation-settings:'wdth' 68}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:var(--s4) 2px var(--s3);flex:none;gap:var(--s3)}
+  .wordmark{font-size:14px;font-weight:700;letter-spacing:.01em;font-variation-settings:'wdth' 122;
+            background:none;color:var(--text);padding:var(--s2) 0;margin:calc(var(--s2) * -1) 0}
+  .counter{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .back{background:none;color:var(--muted);font-size:13px;padding:var(--s2) 0}
+
+  .pips{display:flex;gap:5px;flex:none;margin-bottom:var(--s3)}
+  .pip{height:4px;flex:1;border-radius:2px;background:var(--line)}
+  .pip.done{background:var(--quiet)}
+  .pip.now{background:var(--text)}
+  .timerTrack{height:2px;background:var(--line);border-radius:2px;margin-bottom:var(--s3);overflow:hidden;flex:none}
+  .timerFill{height:100%;background:var(--text);width:100%;transform-origin:left center}
+
+  /* ---------- stage ---------- */
+  .stage{position:relative;background:var(--stage);border-radius:var(--radius);
+         padding:var(--s5) var(--s4) var(--s4);flex:none;overflow:hidden;
+         display:flex;flex-direction:column;align-items:center}
+  /* Achromatic texture only. A tint here would shift how the shirt reads. */
+  .stage::before{content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 1px,transparent 1px 7px)}
+  .ghost{position:absolute;top:-10px;left:0;right:0;text-align:center;font-size:150px;
+         font-weight:700;line-height:1;color:rgba(19,19,21,.10);font-variation-settings:'wdth' 68;
+         letter-spacing:-.04em;pointer-events:none;user-select:none}
+  .shirts{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:var(--s4);width:100%}
+  .shirtWrap{position:relative;flex:0 1 auto}
+  .shirtWrap svg{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 14px rgba(0,0,0,.22))}
+  .solo .shirtWrap{width:200px}
+  .duo .shirtWrap{width:142px}
+  .shirtLabel{font-size:11px;color:var(--on-stage-2);text-align:center;margin-top:var(--s2);
+              font-weight:500;font-variant-numeric:tabular-nums;position:relative}
+  .team{position:relative;margin-top:var(--s4);text-align:center;color:var(--on-stage);
+        font-size:34px;font-weight:700;letter-spacing:-.035em;line-height:1;font-variation-settings:'wdth' 116}
+  .country{position:relative;margin-top:var(--s2);font-size:12.5px;color:var(--on-stage-2);text-align:center;font-weight:500}
+
+  /* The clip-path goes on the SVG, not on a wrapper div. A wrapper whose only
+     child is absolutely positioned has zero height, and inset(0) on a zero-height
+     box clips the whole thing away. */
+  .flood{position:absolute;inset:0}
+  .flood svg{position:absolute;inset:0;width:100%;clip-path:inset(0 0 0 0)}
+  .flood.animate svg{animation:flood .55s cubic-bezier(.2,.7,.3,1) both}
+  @keyframes flood{from{clip-path:inset(100% 0 0 0)} to{clip-path:inset(0 0 0 0)}}
+
+  /* ---------- picker ---------- */
+  .picker{margin-top:var(--s4);flex:none}
+  .sv{position:relative;width:100%;height:190px;border-radius:14px;cursor:crosshair;
+      touch-action:none;overflow:hidden;border:1px solid var(--edge)}
+  .knob{position:absolute;width:30px;height:30px;border-radius:50%;border:3px solid #fff;
+        box-shadow:0 0 0 1px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.45);
+        transform:translate(-50%,-50%);pointer-events:none}
+  .hue{position:relative;width:100%;height:34px;margin-top:var(--s3);border-radius:10px;
+       touch-action:none;cursor:pointer;border:1px solid var(--edge);
+       background:linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%)}
+  .hueKnob{position:absolute;top:50%;width:18px;height:44px;border-radius:6px;background:#fff;
+           box-shadow:0 0 0 1px rgba(0,0,0,.5);transform:translate(-50%,-50%);pointer-events:none}
+  .readout{display:flex;align-items:center;gap:var(--s3);margin-top:var(--s4)}
+  .swatch{width:58px;height:58px;border-radius:12px;border:1px solid var(--edge);flex:none}
+  .readoutText{min-width:0}
+  .hex{font-size:22px;font-weight:500;font-variant-numeric:tabular-nums;font-family:inherit;
+       background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--edge);
+       padding:0 0 3px;width:7.5ch;text-transform:uppercase}
+  .hex:focus{outline:none;border-bottom-color:var(--text)}
+  .hex.bad{border-bottom-color:var(--bad)}
+  .numbers{font-size:12px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+  .numbers b{font-weight:500;color:var(--text)}
+
+  button{font:inherit;cursor:pointer;border:0}
+  .btn{width:100%;min-height:54px;padding:var(--s4);border-radius:14px;background:var(--text);
+       color:#0E0E10;font-size:16px;font-weight:700;letter-spacing:-.01em;margin-top:var(--s4);
+       transition:transform .08s ease}
+  .btn:active{transform:scale(.985)}
+  .btn.quiet{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1px var(--edge);font-weight:500}
+  .btn:disabled{opacity:.45;cursor:default}
+  .warn{font-size:13px;color:var(--bad);margin-top:var(--s2);text-align:center}
+  :focus-visible{outline:2px solid #fff;outline-offset:3px}
+
+  /* ---------- score ---------- */
+  .result{margin-top:var(--s5);flex:none}
+  .scoreLine{display:flex;align-items:flex-end;gap:var(--s4)}
+  .score{font-size:92px}
+  .verdict{font-size:15px;color:var(--muted);padding-bottom:12px;line-height:1.3;max-width:12ch}
+  .detail{font-size:13px;color:var(--muted);margin-top:var(--s3);line-height:1.55}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3);margin-top:var(--s5)}
+  .cell{background:var(--raise);border-radius:14px;padding:var(--s3) var(--s2) var(--s2);
+        display:flex;flex-direction:column;align-items:center}
+  .cell svg{width:78%;height:auto;display:block;margin-top:var(--s1)}
+  .cellName{font-size:11px;font-weight:600;line-height:1.2;text-align:center;
+            letter-spacing:-.01em;min-height:2.4em;display:flex;align-items:center}
+  .cellMeta{font-size:9.5px;color:var(--muted);text-align:center;margin-top:2px;line-height:1.25}
+  .cellScore{font-size:22px;margin-top:var(--s2);padding-bottom:var(--s1)}
+  .legend{font-size:12px;color:var(--muted);margin-top:var(--s3);line-height:1.5}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);margin-top:var(--s5)}
+  .stat{background:var(--raise);border-radius:14px;padding:var(--s3) var(--s2);text-align:center}
+  .statNum{font-size:30px}
+  .statLabel{font-size:10.5px;color:var(--muted);margin-top:var(--s1);line-height:1.25}
+  .countdown{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);
+             margin-top:var(--s5);padding-top:var(--s4);border-top:1px solid var(--line)}
+  .countdownNum{font-size:40px}
+  .countdownLabel{font-size:12px;color:var(--muted);text-align:right;max-width:10ch;line-height:1.3}
+
+  /* ---------- home ---------- */
+  .hero{position:relative;margin-top:var(--s2);height:180px;display:flex;align-items:flex-end;
+        justify-content:center;overflow:hidden;flex:none}
+  .hero .h{width:92px;margin:0 -15px}
+  .hero .h svg{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
+  .homeTitle{font-size:clamp(38px,11.5vw,54px);margin-top:var(--s5)}
+  .homeSub{font-size:15px;color:var(--muted);margin-top:var(--s3);line-height:1.55;max-width:32ch}
+  .menu{display:flex;flex-direction:column;gap:var(--s3);margin-top:var(--s6)}
+  .tile{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
+        background:var(--raise);border-radius:16px;padding:var(--s4) var(--s5);
+        min-height:76px;width:100%;text-align:left;color:var(--text);
+        transition:transform .08s ease,background .12s ease}
+  .tile:active{transform:scale(.99)}
+  .tile:hover{background:var(--raise2)}
+  .tileName{font-size:19px;font-weight:700;letter-spacing:-.02em}
+  .tileNote{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .tileMeta{font-size:26px;flex:none;color:var(--text)}
+  .tileMeta.dim{color:var(--quiet);font-size:12.5px;font-weight:500;max-width:7ch;text-align:right;line-height:1.3}
+
+  /* ---------- sections ---------- */
+  .h2{font-size:26px;font-weight:700;letter-spacing:-.03em;margin-top:var(--s2);font-variation-settings:'wdth' 112}
+  .lede{font-size:13.5px;color:var(--muted);margin-top:var(--s2);line-height:1.55;max-width:36ch}
+  .seg{display:flex;gap:var(--s2);margin-top:var(--s5);background:var(--raise);padding:var(--s1);border-radius:12px}
+  .seg button{flex:1;padding:var(--s3);border-radius:9px;background:transparent;color:var(--muted);
+              font-size:14px;font-weight:500;min-height:44px}
+  .seg button.on{background:var(--text);color:var(--ink);font-weight:700}
+
+  /* ---------- filters ---------- */
+  .filterGroup{margin-top:var(--s5)}
+  .filterTitle{font-size:11.5px;color:var(--muted);margin-bottom:var(--s3)}
+  .chipRow{display:flex;flex-wrap:wrap;gap:var(--s2)}
+  .chip{padding:10px var(--s4);border-radius:999px;background:var(--raise);color:var(--text);
+        font-size:13.5px;min-height:44px;box-shadow:inset 0 0 0 1px transparent}
+  .chip.on{background:var(--text);color:var(--ink);font-weight:700}
+  .chip small{color:var(--muted);margin-left:6px;font-size:11.5px}
+  .chip.on small{color:rgba(14,14,16,.55)}
+  .poolNote{font-size:13px;color:var(--muted);margin-top:var(--s4)}
+
+  /* ---------- leaderboard ---------- */
+  .board{margin-top:var(--s4);border-top:1px solid var(--line)}
+  .bRow{display:flex;align-items:center;gap:var(--s4);padding:var(--s3) 2px;border-bottom:1px solid var(--line)}
+  .bRow.you{background:var(--raise);border-radius:10px;padding-left:var(--s3);padding-right:var(--s3)}
+  .bRank{font-size:18px;width:2.4ch;flex:none;color:var(--quiet)}
+  .bName{flex:1;min-width:0;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bScore{font-size:19px;flex:none}
+  .empty{background:var(--raise);border-radius:16px;padding:var(--s5);margin-top:var(--s4);
+         font-size:13.5px;color:var(--muted);line-height:1.6}
+  .field{width:100%;background:var(--raise);border:1px solid var(--edge);border-radius:12px;
+         padding:var(--s4);font:inherit;font-size:16px;color:var(--text);min-height:54px;margin-top:var(--s3)}
+  .field::placeholder{color:var(--quiet)}
+  .code{font-variation-settings:'wdth' 68;font-weight:700;font-size:30px;letter-spacing:.12em;
+        text-align:center;background:var(--raise);border-radius:14px;padding:var(--s4);margin-top:var(--s3)}
+
+  /* ---------- profile ---------- */
+  .pHead{display:flex;align-items:center;gap:var(--s4);margin-top:var(--s4)}
+  .pAvatar{width:64px;height:64px;flex:none;border-radius:16px;background:var(--raise);
+           display:flex;align-items:center;justify-content:center;font-size:26px}
+  .pName{font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+  .pEdit{background:none;color:var(--muted);font-size:12.5px;padding:6px 0;margin-top:2px}
+  .bigStat{background:var(--raise);border-radius:16px;padding:var(--s5);margin-top:var(--s4)}
+  .bigStatNum{font-size:60px}
+  .bigStatLabel{font-size:12.5px;color:var(--muted);margin-top:var(--s2)}
+  .streakBar{display:flex;gap:4px;margin-top:var(--s4)}
+  .streakSeg{height:34px;flex:1;border-radius:5px;background:var(--line)}
+  .streakSeg.on{background:var(--text)}
+  /* History uses one hue at varying intensity, never a red-to-green ramp:
+     the players most likely to misread that are the ones this game is hardest for. */
+  .heat{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-top:var(--s4)}
+  .day{aspect-ratio:1;border-radius:4px;background:var(--raise2)}
+  .scale{display:flex;align-items:center;gap:6px;margin-top:var(--s3);font-size:11px;color:var(--muted)}
+  .scale i{width:14px;height:14px;border-radius:3px;display:block}
+
+  .spacer{flex:1;min-height:var(--s4)}
+  footer{padding:var(--s4) 2px 26px;font-size:11px;color:var(--quiet);flex:none;line-height:1.5}
+
+  @media (max-width:360px){
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .score{font-size:76px}
+    .heat{grid-template-columns:repeat(10,1fr)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important}
+    .animate .top{animation:none;clip-path:inset(0 0 0 0)}
+    .timerTrack{display:none}
+  }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script>
+/* ============================================================
+   DATA — edit this table, or paste it straight out of a spreadsheet.
+   Columns: team | country | season | type | pattern | main | secondary | role | verified
+
+   main      the colour the player guesses
+   secondary the other colour on the shirt
+   role      'base' = main fills the shirt, secondary is the pattern
+             'over' = main IS the pattern, secondary fills the shirt
+   pattern   plain | stripes | hoops | halves | band | chest | sash | checks
+   verified  y = colour and season checked against a kit archive
+             n = best recollection, NOT yet checked
+   ============================================================ */
+const INCLUDE_UNVERIFIED = true;   // set to false to play only checked kits
+
+// Pure black and pure white are trivially guessable, so they are refused at
+// load. A bad paste cannot put them back in.
+const BANNED_ANSWERS = ['#000000', '#FFFFFF'];
+
+const KIT_TABLE = `
+team|country|season|type|pattern|main|secondary|role|verified
+Arsenal|England|1997/98|Home|plain|#EF0107|#FFFFFF|base|y
+Liverpool|England|1988/89|Home|plain|#C8102E|#FFFFFF|base|n
+Chelsea|England|2004/05|Home|plain|#034694|#FFFFFF|base|y
+Manchester United|England|1998/99|Home|plain|#DA291C|#FFFFFF|base|y
+Manchester City|England|2011/12|Home|plain|#6CABDD|#FFFFFF|base|y
+Everton|England|1994/95|Home|plain|#003399|#FFFFFF|base|y
+Newcastle United|England|1995/96|Home|stripes|#241F20|#FFFFFF|over|y
+Aston Villa|England|1981/82|Home|plain|#670E36|#95BFE5|base|y
+West Ham United|England|1985/86|Home|plain|#7A263A|#1BB1E7|base|n
+Wolverhampton|England|2018/19|Home|plain|#FDB913|#231F20|base|y
+Nottingham Forest|England|1979/80|Home|plain|#DD0000|#FFFFFF|base|y
+Brighton|England|2017/18|Home|stripes|#0057B8|#FFFFFF|over|y
+Southampton|England|1976/77|Home|stripes|#D71920|#FFFFFF|over|n
+Sunderland|England|1997/98|Home|stripes|#EB172B|#FFFFFF|over|y
+Sheffield United|England|2019/20|Home|stripes|#EC2227|#FFFFFF|over|y
+Sheffield Wednesday|England|1992/93|Home|stripes|#1B4C9C|#FFFFFF|over|y
+Queens Park Rangers|England|1981/82|Home|hoops|#1D5BA4|#FFFFFF|over|y
+Norwich City|England|2011/12|Home|plain|#FFF200|#00A650|base|y
+Watford|England|1983/84|Home|plain|#FBEE23|#ED2127|base|y
+Hull City|England|2008/09|Home|stripes|#F5A12D|#000000|base|y
+Blackburn Rovers|England|1994/95|Home|halves|#009EE0|#FFFFFF|over|y
+Crystal Palace|England|1990/91|Home|stripes|#1B458F|#C4122E|over|n
+Charlton Athletic|England|1998/99|Home|plain|#D4021D|#FFFFFF|base|y
+Middlesbrough|England|1996/97|Home|chest|#E21C38|#FFFFFF|base|y
+Ipswich Town|England|1980/81|Home|plain|#0044A9|#FFFFFF|base|y
+Coventry City|England|1987/88|Home|plain|#78D0F3|#FFFFFF|base|y
+Leicester City|England|2015/16|Home|plain|#003090|#FFFFFF|base|y
+Burnley|England|2014/15|Home|plain|#6C1D45|#97D4E9|base|y
+West Bromwich Albion|England|1978/79|Home|stripes|#122F67|#FFFFFF|over|y
+Stoke City|England|1996/97|Home|stripes|#E03A3E|#FFFFFF|over|y
+Luton Town|England|2023/24|Home|plain|#F78F1E|#002D62|base|y
+Brentford|England|2021/22|Home|stripes|#E30613|#FFFFFF|over|n
+Celtic|Scotland|1997/98|Home|hoops|#018749|#FFFFFF|over|y
+Rangers|Scotland|1992/93|Home|plain|#1B458F|#FFFFFF|base|n
+Aberdeen|Scotland|1982/83|Home|plain|#E2001A|#FFFFFF|base|n
+Heart of Midlothian|Scotland|1997/98|Home|plain|#7A1732|#FFFFFF|base|y
+Hibernian|Scotland|2015/16|Home|plain|#005E36|#FFFFFF|base|y
+Dundee United|Scotland|1986/87|Home|plain|#FF7000|#000000|base|y
+Barcelona|Spain|2008/09|Home|stripes|#A50044|#004D98|base|y
+Atletico Madrid|Spain|1995/96|Home|stripes|#CB3524|#FFFFFF|over|y
+Athletic Club|Spain|2011/12|Home|stripes|#EE2523|#FFFFFF|over|y
+Real Betis|Spain|2004/05|Home|stripes|#00954C|#FFFFFF|over|n
+Villarreal|Spain|2005/06|Home|plain|#FFE667|#005187|base|y
+Real Sociedad|Spain|2019/20|Home|stripes|#0067B1|#FFFFFF|over|y
+Internazionale|Italy|2009/10|Home|stripes|#0068A8|#000000|base|y
+AC Milan|Italy|1993/94|Home|stripes|#FB090B|#000000|base|y
+Napoli|Italy|1986/87|Home|plain|#12A0D7|#FFFFFF|base|y
+AS Roma|Italy|2000/01|Home|plain|#8E1F2F|#F0BC42|base|y
+Fiorentina|Italy|1998/99|Home|plain|#482E92|#FFFFFF|base|y
+Lazio|Italy|1999/2000|Home|plain|#87D8F7|#FFFFFF|base|y
+Torino|Italy|1976/77|Home|plain|#881010|#FFFFFF|base|y
+Sampdoria|Italy|1990/91|Home|chest|#1B5AAB|#FFFFFF|base|y
+Atalanta|Italy|2019/20|Home|stripes|#1E71B8|#000000|base|y
+Parma|Italy|1998/99|Home|plain|#FFE500|#0B3C8C|base|n
+Bayern Munich|Germany|2012/13|Home|plain|#DC052D|#FFFFFF|base|y
+Borussia Dortmund|Germany|1996/97|Home|plain|#FDE100|#000000|base|y
+Schalke 04|Germany|2010/11|Home|plain|#004D9D|#FFFFFF|base|y
+Werder Bremen|Germany|2003/04|Home|plain|#1D9053|#FFFFFF|base|y
+Bayer Leverkusen|Germany|2001/02|Home|plain|#E32221|#000000|base|y
+Eintracht Frankfurt|Germany|2021/22|Home|plain|#E1000F|#000000|base|y
+Ajax|Netherlands|1994/95|Home|band|#D2122E|#FFFFFF|over|n
+PSV Eindhoven|Netherlands|1987/88|Home|stripes|#ED1C24|#FFFFFF|base|y
+Feyenoord|Netherlands|2016/17|Home|halves|#C40018|#FFFFFF|over|y
+AZ Alkmaar|Netherlands|2008/09|Home|plain|#E2001A|#FFFFFF|base|n
+FC Porto|Portugal|2003/04|Home|stripes|#00428C|#FFFFFF|over|y
+Benfica|Portugal|2013/14|Home|plain|#E00000|#FFFFFF|base|y
+Sporting CP|Portugal|2001/02|Home|hoops|#008057|#FFFFFF|over|y
+Paris Saint-Germain|France|1994/95|Home|band|#E30613|#004170|over|n
+Saint-Etienne|France|1975/76|Home|plain|#0A6B3C|#FFFFFF|base|y
+Anderlecht|Belgium|2000/01|Home|plain|#52267E|#FFFFFF|base|y
+Club Brugge|Belgium|2015/16|Home|stripes|#005BAB|#000000|base|y
+Galatasaray|Turkey|1999/2000|Home|halves|#A90432|#FADC41|over|y
+Olympiacos|Greece|2014/15|Home|stripes|#E4002B|#FFFFFF|over|n
+Panathinaikos|Greece|1995/96|Home|plain|#007A33|#FFFFFF|base|y
+Boca Juniors|Argentina|2000|Home|chest|#0A2A5D|#FFC500|base|n
+Flamengo|Brazil|2019|Home|hoops|#E30613|#000000|base|n
+Palmeiras|Brazil|2020|Home|plain|#006437|#FFFFFF|base|y
+Penarol|Uruguay|2016|Home|stripes|#FFDE00|#000000|base|y
+Racing Club|Argentina|2014|Home|stripes|#6CACE4|#FFFFFF|over|y
+Netherlands|National|1988|Home|plain|#FF6900|#FFFFFF|base|y
+Italy|National|2006|Home|plain|#0066CC|#FFFFFF|base|y
+Brazil|National|1970|Home|plain|#FFDF00|#009739|base|y
+Argentina|National|1986|Home|stripes|#75AADB|#FFFFFF|over|y
+France|National|1998|Home|plain|#21304F|#FFFFFF|base|y
+Croatia|National|1998|Home|checks|#FF0000|#FFFFFF|base|y
+Japan|National|2018|Home|plain|#0B318F|#FFFFFF|base|y
+Nigeria|National|2018|Home|plain|#008751|#FFFFFF|base|y
+Uruguay|National|2010|Home|plain|#5CBFEB|#000000|base|y
+Spain|National|2010|Home|plain|#C60B1E|#FFCE00|base|y
+Arsenal|England|1991/93|Away|plain|#DFD64B|#132257|base|y
+Manchester United|England|1995/96|Away|plain|#9DA2A6|#FFFFFF|base|y
+Manchester United|England|1992/94|Away|plain|#1C1C1C|#0F7B4A|base|y
+Coventry City|England|1978/79|Away|plain|#6B4A2F|#FFFFFF|base|y
+England|National|1966|Away|plain|#C8102E|#FFFFFF|base|n
+Germany|National|1994|Away|plain|#006A44|#FFFFFF|base|y
+Brazil|National|1998|Away|plain|#1B3A8C|#FFDF00|base|y
+Argentina|National|1994|Away|plain|#0B1F3B|#75AADB|base|y
+Real Madrid|Spain|2001/02|Away|plain|#0A0A2A|#FFFFFF|base|y
+Celtic|Scotland|1998/99|Away|plain|#FFE600|#018749|base|n
+Liverpool|England|1996/97|Away|plain|#EFE6D0|#0A7A3C|base|n
+Chelsea|England|1994/96|Away|plain|#F7941D|#58595B|base|n
+Everton|England|1991/92|Away|plain|#F4A7A0|#003399|base|n
+Tottenham Hotspur|England|1991/92|Away|plain|#8CC8E8|#131E29|base|n
+Leeds United|England|1992/93|Away|plain|#FFE600|#1D428A|base|n
+Aston Villa|England|1993/94|Away|plain|#00A651|#000000|base|n
+Manchester City|England|1994/95|Away|plain|#7A263A|#FFFFFF|base|n
+Norwich City|England|1992/93|Away|plain|#00A650|#FFF200|base|n
+Crystal Palace|England|1994/95|Away|plain|#FFE600|#1B458F|base|n
+Newcastle United|England|1995/96|Away|plain|#8B1A3D|#241F20|base|n
+Southampton|England|1993/94|Away|plain|#F58220|#000000|base|n
+Sheffield Wednesday|England|1993/94|Away|plain|#FFE600|#1B4C9C|base|n
+Wimbledon|England|1993/94|Away|plain|#FFE600|#001C58|base|n
+Nottingham Forest|England|1992/93|Away|plain|#FFE600|#DD0000|base|n
+Sunderland|England|1997/98|Away|plain|#0A2A5D|#FFFFFF|base|n
+West Ham United|England|1991/92|Away|plain|#8AC6E8|#7A263A|base|n
+Queens Park Rangers|England|1993/94|Away|plain|#E4002B|#FFFFFF|base|n
+Ipswich Town|England|1978/79|Away|plain|#0A2A5D|#FFFFFF|base|n
+Watford|England|1984/85|Away|plain|#E4002B|#FBEE23|base|n
+Rangers|Scotland|1994/95|Away|plain|#E2001A|#1B458F|base|n
+Barcelona|Spain|2007/08|Away|plain|#FFE600|#A50044|base|n
+Valencia|Spain|2000/01|Away|plain|#F5A800|#FFFFFF|base|n
+Sevilla|Spain|2005/06|Away|plain|#D81920|#FFFFFF|base|n
+Atletico Madrid|Spain|1996/97|Away|plain|#0A2A5D|#CB3524|base|n
+Olympique de Marseille|France|1992/93|Away|plain|#2FAEE0|#FFFFFF|base|n
+River Plate|Argentina|1997|Away|plain|#E1122C|#FFFFFF|base|n
+Liverpool|England|2022/23|Away|plain|#1A8A8A|#FFFFFF|base|n
+Liverpool|England|2024/25|Away|plain|#0E7C4A|#FFFFFF|base|n
+Liverpool|England|2017/18|Away|plain|#8FD400|#1A1A1A|base|n
+Liverpool|England|2012/13|Away|plain|#4B2E83|#FFFFFF|base|n
+Real Madrid|Spain|2016/17|Away|plain|#5B2A86|#FFFFFF|base|n
+Real Madrid|Spain|2024/25|Away|plain|#F2622E|#FFFFFF|base|n
+Manchester City|England|2007/08|Away|plain|#5C2D91|#FFFFFF|base|n
+FC Porto|Portugal|2026/27|Away|plain|#4A2C6B|#EFE6D0|base|n
+Bournemouth|England|2024/25|Away|checks|#2E9E9E|#6B3FA0|base|n
+Barcelona|Spain|1991/92|Away|plain|#F06E28|#004D98|base|n
+Barcelona|Spain|2024/25|Third|plain|#C8E64A|#004D98|base|n
+Girona|Spain|2024/25|Away|sash|#1B2A5B|#D4A017|base|n
+Brentford|England|2022/23|Away|plain|#7FB2E5|#0A2A5D|base|n
+VfB Stuttgart|Germany|2024/25|Away|chest|#D6001C|#FFFFFF|base|n
+Chelsea|England|2020/21|Third|stripes|#C8102E|#034694|over|n
+Real Betis|Spain|2019/20|Home|stripes|#00954C|#FFFFFF|over|n
+Palermo|Italy|2010/11|Home|plain|#F4A6C0|#1A1A1A|base|n
+Bayer Leverkusen|Germany|2026/27|Away|plain|#2F9E8F|#1A1A2E|base|n
+Birmingham City|England|2002/03|Home|plain|#205AA3|#FFFFFF|base|y
+Portsmouth|England|2007/08|Home|plain|#001489|#FFFFFF|base|y
+Reading|England|2006/07|Home|hoops|#004494|#FFFFFF|over|y
+Wigan Athletic|England|2005/06|Home|stripes|#0055A4|#FFFFFF|over|y
+Deportivo La Coruna|Spain|2003/04|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Osasuna|Spain|2005/06|Home|plain|#C3132C|#0A2A5D|base|y
+Genoa|Italy|2008/09|Home|halves|#B4162A|#14315E|over|y
+Lecce|Italy|2003/04|Home|stripes|#F5D000|#E2001A|base|n
+Chievo Verona|Italy|2001/02|Home|plain|#F5C400|#0A47A1|base|y
+VfL Wolfsburg|Germany|2008/09|Home|plain|#65B32E|#FFFFFF|base|y
+Hamburger SV|Germany|2005/06|Home|chest|#E30613|#FFFFFF|over|n
+Hertha BSC|Germany|2008/09|Home|plain|#005CA9|#FFFFFF|base|n
+Lille|France|2004/05|Home|plain|#E01E13|#14315E|base|y
+AS Monaco|France|2003/04|Home|halves|#E63329|#FFFFFF|over|y
+Bordeaux|France|2008/09|Home|plain|#00214E|#FFFFFF|base|y
+Nantes|France|2000/01|Home|plain|#FFD200|#008D36|base|y
+RC Lens|France|2006/07|Home|stripes|#FFE400|#B8102E|base|y
+SC Braga|Portugal|2005/06|Home|plain|#C41230|#FFFFFF|base|n
+FC Twente|Netherlands|2009/10|Home|plain|#E4002B|#FFFFFF|base|n
+Standard Liege|Belgium|2008/09|Home|plain|#EB1923|#FFFFFF|base|n
+KRC Genk|Belgium|2001/02|Home|plain|#0072CE|#FFFFFF|base|n
+Sao Paulo|Brazil|2005|Home|hoops|#DB0A13|#FFFFFF|over|y
+Internacional|Brazil|2006|Home|plain|#B01C2E|#FFFFFF|base|y
+Gremio|Brazil|2007|Home|stripes|#0D80BF|#1A1A1A|base|y
+Club America|Mexico|2005|Home|plain|#FFD100|#14315E|base|n
+Cruz Azul|Mexico|2008|Home|plain|#003DA6|#FFFFFF|base|n
+Urawa Red Diamonds|Japan|2006|Home|plain|#E4002B|#1A1A1A|base|n
+Kashima Antlers|Japan|2007|Home|plain|#A50034|#14315E|base|y
+Portugal|National|2006|Home|plain|#C50E2C|#006600|base|y
+Belgium|National|2002|Home|plain|#E62B2B|#1A1A1A|base|y
+Mexico|National|2006|Home|plain|#006847|#FFFFFF|base|y
+South Korea|National|2002|Home|plain|#CD2E3A|#14315E|base|y
+Cameroon|National|2002|Home|plain|#007A5E|#FCD116|base|y
+Sweden|National|2006|Home|plain|#FFCD00|#005293|base|n
+Denmark|National|2002|Home|plain|#C60C30|#FFFFFF|base|y
+Turkey|National|2008|Home|plain|#E30A17|#FFFFFF|base|y
+Blackpool|England|2010/11|Home|plain|#F68712|#FFFFFF|base|y
+Cardiff City|England|2013/14|Home|plain|#D71920|#FFFFFF|base|n
+Huddersfield Town|England|2017/18|Home|stripes|#0E63AD|#FFFFFF|over|y
+Bristol City|England|2014/15|Home|plain|#D81E38|#FFFFFF|base|y
+Millwall|England|2016/17|Home|plain|#001F5B|#FFFFFF|base|y
+Oxford United|England|2015/16|Home|plain|#FFD100|#14315E|base|n
+Motherwell|Scotland|2011/12|Home|plain|#FFB81C|#7A1732|base|y
+Kilmarnock|Scotland|2012/13|Home|stripes|#14315E|#FFFFFF|over|n
+Getafe|Spain|2015/16|Home|plain|#005CA9|#FFFFFF|base|n
+Granada|Spain|2013/14|Home|stripes|#C41230|#FFFFFF|over|n
+SD Eibar|Spain|2014/15|Home|stripes|#14315E|#C8102E|base|n
+Rayo Vallecano|Spain|2015/16|Home|sash|#E30613|#FFFFFF|over|n
+Sassuolo|Italy|2015/16|Home|stripes|#00A752|#1A1A1A|base|y
+Hellas Verona|Italy|2013/14|Home|plain|#003C7D|#FFE500|base|y
+Empoli|Italy|2016/17|Home|plain|#00579C|#FFFFFF|base|y
+TSG Hoffenheim|Germany|2016/17|Home|plain|#1961B5|#FFFFFF|base|y
+SC Freiburg|Germany|2015/16|Home|plain|#E2001A|#1A1A1A|base|n
+FSV Mainz 05|Germany|2015/16|Home|plain|#C3141E|#FFFFFF|base|y
+FC Augsburg|Germany|2014/15|Home|stripes|#BA3733|#FFFFFF|over|y
+OGC Nice|France|2016/17|Home|plain|#C8102E|#1A1A1A|base|n
+Montpellier|France|2011/12|Home|halves|#F58220|#14315E|over|n
+Stade Rennais|France|2018/19|Home|halves|#E4002B|#1A1A1A|over|n
+Seattle Sounders|USA|2016|Home|plain|#5D9732|#14315E|base|y
+Portland Timbers|USA|2015|Home|plain|#00482B|#D69A00|base|y
+Orlando City|USA|2015|Home|plain|#633492|#FFFFFF|base|y
+Atlanta United|USA|2018|Home|stripes|#A6192E|#1A1A1A|base|y
+Tigres UANL|Mexico|2016|Home|plain|#F5A800|#14315E|base|n
+San Lorenzo|Argentina|2014|Home|stripes|#14315E|#8E1F2F|base|n
+Cruzeiro|Brazil|2014|Home|plain|#0A4FA0|#FFFFFF|base|n
+Kawasaki Frontale|Japan|2018|Home|plain|#00A0E9|#1A1A1A|base|y
+Colombia|National|2014|Home|plain|#FCD116|#003893|base|y
+Chile|National|2014|Home|plain|#D52B1E|#14315E|base|n
+Ecuador|National|2014|Home|plain|#FFDD00|#14315E|base|y
+Australia|National|2014|Home|plain|#FFCD00|#00843D|base|n
+Iceland|National|2016|Home|plain|#0048A0|#FFFFFF|base|y
+Wales|National|2016|Home|plain|#C8102E|#00A650|base|n
+Senegal|National|2018|Home|plain|#00853F|#FDEF42|base|y
+Morocco|National|2018|Home|plain|#C1272D|#006233|base|y
+Peru|National|2018|Home|sash|#D91023|#FFFFFF|over|y
+Plymouth Argyle|England|2023/24|Home|plain|#00543C|#FFFFFF|base|y
+Wrexham|England|2023/24|Home|plain|#D2122E|#FFFFFF|base|n
+Bristol Rovers|England|2021/22|Home|hoops|#0072CE|#FFFFFF|over|n
+Cadiz|Spain|2021/22|Home|plain|#FFE500|#14315E|base|n
+Elche|Spain|2021/22|Home|plain|#00954C|#FFFFFF|base|n
+AC Monza|Italy|2022/23|Home|plain|#E2001A|#FFFFFF|base|n
+Salernitana|Italy|2022/23|Home|stripes|#6B1F2E|#FFFFFF|over|y
+Venezia|Italy|2021/22|Home|plain|#00653A|#F58220|base|y
+Union Berlin|Germany|2021/22|Home|plain|#EB1923|#FFFFFF|base|n
+Arminia Bielefeld|Germany|2020/21|Home|plain|#00529F|#FFFFFF|base|y
+Greuther Furth|Germany|2021/22|Home|plain|#00954C|#FFFFFF|base|n
+Toulouse|France|2022/23|Home|plain|#6A2B85|#FFFFFF|base|y
+Stade Brestois|France|2023/24|Home|plain|#C8102E|#FFFFFF|base|n
+Inter Miami|USA|2023|Home|plain|#F7B5CD|#1A1A1A|base|y
+Austin FC|USA|2022|Home|plain|#00B140|#1A1A1A|base|y
+Nashville SC|USA|2022|Home|plain|#ECE83A|#1B1B3A|base|y
+Charlotte FC|USA|2022|Home|plain|#1A85C8|#1A1A1A|base|y
+Union Saint-Gilloise|Belgium|2022/23|Home|plain|#F5D000|#14315E|base|n
+Red Star Belgrade|Serbia|2021/22|Home|stripes|#E4002B|#FFFFFF|over|n
+Ferencvaros|Hungary|2021/22|Home|stripes|#0A5C36|#FFFFFF|over|y
+Shakhtar Donetsk|Ukraine|2020/21|Home|stripes|#F5820D|#1A1A1A|base|y
+Dynamo Kyiv|Ukraine|2021/22|Home|plain|#0A4FA0|#FFFFFF|base|n
+Al Hilal|Saudi Arabia|2023/24|Home|plain|#0A4FA0|#FFFFFF|base|n
+Al Nassr|Saudi Arabia|2023/24|Home|plain|#F5D000|#14315E|base|n
+Yokohama F. Marinos|Japan|2022|Home|plain|#003DA6|#FFFFFF|base|n
+Vissel Kobe|Japan|2023|Home|plain|#8B1A3D|#1A1A1A|base|n
+Fluminense|Brazil|2023|Home|stripes|#7A1C3C|#00693E|base|y
+Estudiantes|Argentina|2023|Home|stripes|#C8102E|#FFFFFF|over|n
+Scotland|National|2021|Home|plain|#003087|#FFFFFF|base|y
+Republic of Ireland|National|2024|Home|plain|#009A44|#FFFFFF|base|y
+Switzerland|National|2021|Home|plain|#D52B1E|#FFFFFF|base|n
+Serbia|National|2022|Home|plain|#C6363C|#FFFFFF|base|y
+Ukraine|National|2021|Home|plain|#FFD500|#0057B8|base|y
+Qatar|National|2022|Home|plain|#8A1538|#FFFFFF|base|y
+Tunisia|National|2022|Home|plain|#E70013|#FFFFFF|base|y
+Cote d Ivoire|National|2023|Home|plain|#F77F00|#FFFFFF|base|y
+Hull City|England|2006/07|Home|stripes|#F5A12D|#1A1A1A|base|n
+West Ham United|England|2006/07|Home|plain|#7A263A|#1BB1E7|base|n
+Lincoln City|England|2002/03|Home|stripes|#C8102E|#FFFFFF|over|n
+Colchester United|England|2008/09|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Bristol City|England|2004/05|Home|plain|#D81E38|#FFFFFF|base|n
+Chelsea|England|2000/01|Home|plain|#034694|#FFFFFF|base|n
+Rochdale|England|2004/05|Home|plain|#0A4FA0|#FFFFFF|base|n
+Exeter City|England|2002/03|Home|stripes|#C8102E|#FFFFFF|over|n
+Plymouth Argyle|England|2002/03|Home|plain|#00543C|#FFFFFF|base|n
+Newcastle United|England|2008/09|Home|stripes|#241F20|#FFFFFF|over|n
+Charlton Athletic|England|2000/01|Home|plain|#D4021D|#FFFFFF|base|n
+Aston Villa|England|2006/07|Home|plain|#670E36|#95BFE5|base|n
+Stoke City|England|2008/09|Home|stripes|#E03A3E|#FFFFFF|over|n
+Wimbledon|England|2008/09|Home|plain|#001C58|#FFE600|base|n
+York City|England|2000/01|Home|plain|#C8102E|#FFFFFF|base|n
+Wolverhampton|England|2000/01|Home|plain|#FDB913|#231F20|base|n
+West Bromwich Albion|England|2002/03|Home|stripes|#122F67|#FFFFFF|over|n
+Everton|England|2008/09|Home|plain|#003399|#FFFFFF|base|n
+Nottingham Forest|England|2004/05|Home|plain|#DD0000|#FFFFFF|base|n
+Arsenal|England|2008/09|Home|plain|#EF0107|#FFFFFF|base|n
+Huddersfield Town|England|2000/01|Home|stripes|#0E63AD|#FFFFFF|over|n
+Watford|England|2000/01|Home|plain|#FBEE23|#ED2127|base|n
+Norwich City|England|2004/05|Home|plain|#FFF200|#00A650|base|n
+Wycombe Wanderers|England|2004/05|Home|halves|#6CACE4|#14315E|over|n
+Rotherham United|England|2002/03|Home|plain|#DA291C|#FFFFFF|base|n
+Crystal Palace|England|2008/09|Home|stripes|#1B458F|#C4122E|over|n
+Birmingham City|England|2000/01|Home|plain|#205AA3|#FFFFFF|base|n
+Brighton|England|2002/03|Home|stripes|#0057B8|#FFFFFF|over|n
+Blackburn Rovers|England|2004/05|Home|halves|#009EE0|#FFFFFF|over|n
+Sheffield United|England|2008/09|Home|stripes|#EC2227|#FFFFFF|over|n
+Gillingham|England|2006/07|Home|plain|#0A4FA0|#FFFFFF|base|n
+Stockport County|England|2008/09|Home|plain|#0A2A5D|#FFFFFF|base|n
+Yeovil Town|England|2004/05|Home|plain|#009639|#FFFFFF|base|n
+Mansfield Town|England|2008/09|Home|plain|#FFB81C|#0A2A5D|base|n
+Carlisle United|England|2002/03|Home|plain|#003DA5|#FFFFFF|base|n
+Hartlepool United|England|2000/01|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Southampton|England|2000/01|Home|stripes|#D71920|#FFFFFF|over|n
+Walsall|England|2000/01|Home|plain|#E4002B|#1A1A1A|base|n
+Burton Albion|England|2004/05|Home|plain|#FFD100|#1A1A1A|base|n
+Reading|England|2008/09|Home|hoops|#004494|#FFFFFF|over|n
+Luton Town|England|2004/05|Home|plain|#F78F1E|#002D62|base|n
+Swindon Town|England|2002/03|Home|plain|#C8102E|#FFFFFF|base|n
+Wigan Athletic|England|2004/05|Home|stripes|#0055A4|#FFFFFF|over|n
+Doncaster Rovers|England|2008/09|Home|hoops|#DA291C|#FFFFFF|over|n
+Leyton Orient|England|2000/01|Home|plain|#E4002B|#FFFFFF|base|n
+Southend United|England|2000/01|Home|plain|#003DA5|#FFFFFF|base|n
+Blackpool|England|2002/03|Home|plain|#F68712|#FFFFFF|base|n
+Accrington Stanley|England|2002/03|Home|plain|#E4002B|#1A1A1A|base|n
+Portsmouth|England|2004/05|Home|plain|#001489|#FFFFFF|base|n
+Millwall|England|2004/05|Home|plain|#001F5B|#FFFFFF|base|n
+Burnley|England|2000/01|Home|plain|#6C1D45|#97D4E9|base|n
+Barnsley|England|2000/01|Home|plain|#E4002B|#FFFFFF|base|n
+Bristol Rovers|England|2004/05|Home|hoops|#0072CE|#FFFFFF|over|n
+Peterborough United|England|2008/09|Home|plain|#0057B8|#FFFFFF|base|n
+Sheffield Wednesday|England|2000/01|Home|stripes|#1B4C9C|#FFFFFF|over|n
+Cheltenham Town|England|2000/01|Home|stripes|#C8102E|#FFFFFF|over|n
+Sunderland|England|2004/05|Home|stripes|#EB172B|#FFFFFF|over|n
+Crewe Alexandra|England|2006/07|Home|plain|#E4002B|#FFFFFF|base|n
+Coventry City|England|2002/03|Home|plain|#78D0F3|#FFFFFF|base|n
+Shrewsbury Town|England|2000/01|Home|plain|#0A4FA0|#F5A800|base|n
+Torquay United|England|2002/03|Home|plain|#FFD700|#0A2A5D|base|n
+Manchester City|England|2004/05|Home|plain|#6CABDD|#FFFFFF|base|n
+Bradford City|England|2002/03|Home|stripes|#7A263A|#FFB81C|base|n
+Wrexham|England|2006/07|Home|plain|#D2122E|#FFFFFF|base|n
+Cambridge United|England|2008/09|Home|plain|#F5A800|#1A1A1A|base|n
+Queens Park Rangers|England|2000/01|Home|hoops|#1D5BA4|#FFFFFF|over|n
+Brentford|England|2000/01|Home|stripes|#E30613|#FFFFFF|over|n
+Liverpool|England|2006/07|Home|plain|#C8102E|#FFFFFF|base|n
+Manchester United|England|2000/01|Home|plain|#DA291C|#FFFFFF|base|n
+Middlesbrough|England|2004/05|Home|chest|#E21C38|#FFFFFF|base|n
+Northampton Town|England|2004/05|Home|plain|#7A1732|#FFFFFF|base|n
+Ipswich Town|England|2002/03|Home|plain|#0044A9|#FFFFFF|base|n
+Scunthorpe United|England|2006/07|Home|plain|#7A263A|#87CEEB|base|n
+Leicester City|England|2008/09|Home|plain|#003090|#FFFFFF|base|n
+Oldham Athletic|England|2004/05|Home|plain|#0A4FA0|#FFFFFF|base|n
+Chesterfield|England|2008/09|Home|plain|#005CA9|#FFFFFF|base|n
+Bournemouth|England|2008/09|Home|stripes|#DA291C|#1A1A1A|base|n
+Oxford United|England|2004/05|Home|plain|#FFD100|#14315E|base|n
+Cardiff City|England|2004/05|Home|plain|#0070B5|#FFFFFF|base|n
+Morecambe|England|2008/09|Home|plain|#C8102E|#FFFFFF|base|n
+West Ham United|England|2004/05|Home|plain|#7A263A|#1BB1E7|base|n
+Hull City|England|2004/05|Home|stripes|#F5A12D|#1A1A1A|base|n
+Colchester United|England|2000/01|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Charlton Athletic|England|2002/03|Home|plain|#D4021D|#FFFFFF|base|n
+Wimbledon|England|2006/07|Home|plain|#001C58|#FFE600|base|n
+Lincoln City|England|2006/07|Home|stripes|#C8102E|#FFFFFF|over|n
+Charlton Athletic|England|2004/05|Home|plain|#D4021D|#FFFFFF|base|n
+Crystal Palace|England|2000/01|Home|stripes|#1B458F|#C4122E|over|n
+Exeter City|England|2008/09|Home|stripes|#C8102E|#FFFFFF|over|n
+West Bromwich Albion|England|2008/09|Home|stripes|#122F67|#FFFFFF|over|n
+Carlisle United|England|2000/01|Home|plain|#003DA5|#FFFFFF|base|n
+Newcastle United|England|2002/03|Home|stripes|#241F20|#FFFFFF|over|n
+Nottingham Forest|England|2006/07|Home|plain|#DD0000|#FFFFFF|base|n
+Sheffield United|England|2000/01|Home|stripes|#EC2227|#FFFFFF|over|n
+Blackburn Rovers|England|2002/03|Home|halves|#009EE0|#FFFFFF|over|n
+Stockport County|England|2004/05|Home|plain|#0A2A5D|#FFFFFF|base|n
+Walsall|England|2002/03|Home|plain|#E4002B|#1A1A1A|base|n
+Southampton|England|2008/09|Home|stripes|#D71920|#FFFFFF|over|n
+Hull City|England|2000/01|Home|stripes|#F5A12D|#1A1A1A|base|n
+Hartlepool United|England|2006/07|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Burton Albion|England|2008/09|Home|plain|#FFD100|#1A1A1A|base|n
+Blackpool|England|2000/01|Home|plain|#F68712|#FFFFFF|base|n
+Aston Villa|England|2000/01|Home|plain|#670E36|#95BFE5|base|n
+Stoke City|England|2004/05|Home|stripes|#E03A3E|#FFFFFF|over|n
+Wigan Athletic|England|2006/07|Home|stripes|#0055A4|#FFFFFF|over|n
+Burnley|England|2004/05|Home|plain|#6C1D45|#97D4E9|base|n
+Brighton|England|2006/07|Home|stripes|#0057B8|#FFFFFF|over|n
+Leyton Orient|England|2008/09|Home|plain|#E4002B|#FFFFFF|base|n
+Walsall|England|2006/07|Home|plain|#E4002B|#1A1A1A|base|n
+Bristol Rovers|England|2000/01|Home|hoops|#0072CE|#FFFFFF|over|n
+Hull City|England|2018/19|Home|stripes|#F5A12D|#1A1A1A|base|n
+Southampton|England|2018/19|Home|stripes|#D71920|#FFFFFF|over|n
+Cambridge United|England|2016/17|Home|plain|#F5A800|#1A1A1A|base|n
+Gillingham|England|2016/17|Home|plain|#0A4FA0|#FFFFFF|base|n
+Aston Villa|England|2016/17|Home|plain|#670E36|#95BFE5|base|n
+Manchester United|England|2012/13|Home|plain|#DA291C|#FFFFFF|base|n
+West Bromwich Albion|England|2012/13|Home|stripes|#122F67|#FFFFFF|over|n
+Charlton Athletic|England|2012/13|Home|plain|#D4021D|#FFFFFF|base|n
+Bristol City|England|2012/13|Home|plain|#D81E38|#FFFFFF|base|n
+Torquay United|England|2012/13|Home|plain|#FFD700|#0A2A5D|base|n
+Leyton Orient|England|2014/15|Home|plain|#E4002B|#FFFFFF|base|n
+Doncaster Rovers|England|2018/19|Home|hoops|#DA291C|#FFFFFF|over|n
+Manchester City|England|2018/19|Home|plain|#6CABDD|#FFFFFF|base|n
+Crystal Palace|England|2010/11|Home|stripes|#1B458F|#C4122E|over|n
+Leicester City|England|2010/11|Home|plain|#003090|#FFFFFF|base|n
+Crawley Town|England|2014/15|Home|plain|#C8102E|#FFFFFF|base|n
+Newport County|England|2014/15|Home|plain|#F5A800|#1A1A1A|base|n
+Norwich City|England|2010/11|Home|plain|#FFF200|#00A650|base|n
+Accrington Stanley|England|2010/11|Home|plain|#E4002B|#1A1A1A|base|n
+Blackburn Rovers|England|2012/13|Home|halves|#009EE0|#FFFFFF|over|n
+Middlesbrough|England|2018/19|Home|chest|#E21C38|#FFFFFF|base|n
+Sunderland|England|2016/17|Home|stripes|#EB172B|#FFFFFF|over|n
+Luton Town|England|2014/15|Home|plain|#F78F1E|#002D62|base|n
+Walsall|England|2012/13|Home|plain|#E4002B|#1A1A1A|base|n
+Brighton|England|2010/11|Home|stripes|#0057B8|#FFFFFF|over|n
+Wigan Athletic|England|2018/19|Home|stripes|#0055A4|#FFFFFF|over|n
+Burton Albion|England|2010/11|Home|plain|#FFD100|#1A1A1A|base|n
+Crewe Alexandra|England|2012/13|Home|plain|#E4002B|#FFFFFF|base|n
+Ipswich Town|England|2012/13|Home|plain|#0044A9|#FFFFFF|base|n
+Lincoln City|England|2014/15|Home|stripes|#C8102E|#FFFFFF|over|n
+Stoke City|England|2010/11|Home|stripes|#E03A3E|#FFFFFF|over|n
+Stevenage|England|2018/19|Home|plain|#C8102E|#FFFFFF|base|n
+Nottingham Forest|England|2018/19|Home|plain|#DD0000|#FFFFFF|base|n
+Southend United|England|2012/13|Home|plain|#003DA5|#FFFFFF|base|n
+Liverpool|England|2010/11|Home|plain|#C8102E|#FFFFFF|base|n
+Exeter City|England|2012/13|Home|stripes|#C8102E|#FFFFFF|over|n
+Chesterfield|England|2018/19|Home|plain|#005CA9|#FFFFFF|base|n
+Salford City|England|2010/11|Home|plain|#E4002B|#1A1A1A|base|n
+Oxford United|England|2014/15|Home|plain|#FFD100|#14315E|base|n
+Colchester United|England|2012/13|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Reading|England|2014/15|Home|hoops|#004494|#FFFFFF|over|n
+Bristol Rovers|England|2014/15|Home|hoops|#0072CE|#FFFFFF|over|n
+Arsenal|England|2010/11|Home|plain|#EF0107|#FFFFFF|base|n
+Hartlepool United|England|2014/15|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Queens Park Rangers|England|2014/15|Home|hoops|#1D5BA4|#FFFFFF|over|n
+Sheffield Wednesday|England|2014/15|Home|stripes|#1B4C9C|#FFFFFF|over|n
+Wycombe Wanderers|England|2010/11|Home|halves|#6CACE4|#14315E|over|n
+Chelsea|England|2018/19|Home|plain|#034694|#FFFFFF|base|n
+Sheffield United|England|2018/19|Home|stripes|#EC2227|#FFFFFF|over|n
+Swindon Town|England|2010/11|Home|plain|#C8102E|#FFFFFF|base|n
+Plymouth Argyle|England|2014/15|Home|plain|#00543C|#FFFFFF|base|n
+Scunthorpe United|England|2014/15|Home|plain|#7A263A|#87CEEB|base|n
+Wolverhampton|England|2012/13|Home|plain|#FDB913|#231F20|base|n
+Stockport County|England|2010/11|Home|plain|#0A2A5D|#FFFFFF|base|n
+Mansfield Town|England|2016/17|Home|plain|#FFB81C|#0A2A5D|base|n
+Huddersfield Town|England|2014/15|Home|stripes|#0E63AD|#FFFFFF|over|n
+Watford|England|2012/13|Home|plain|#FBEE23|#ED2127|base|n
+Fleetwood Town|England|2018/19|Home|plain|#C8102E|#FFFFFF|base|n
+Coventry City|England|2018/19|Home|plain|#78D0F3|#FFFFFF|base|n
+Millwall|England|2018/19|Home|plain|#001F5B|#FFFFFF|base|n
+Morecambe|England|2010/11|Home|plain|#C8102E|#FFFFFF|base|n
+Burnley|England|2012/13|Home|plain|#6C1D45|#97D4E9|base|n
+Shrewsbury Town|England|2016/17|Home|plain|#0A4FA0|#F5A800|base|n
+Rotherham United|England|2010/11|Home|plain|#DA291C|#FFFFFF|base|n
+Cardiff City|England|2018/19|Home|plain|#0070B5|#FFFFFF|base|n
+Rochdale|England|2012/13|Home|plain|#0A4FA0|#FFFFFF|base|n
+Brentford|England|2014/15|Home|stripes|#E30613|#FFFFFF|over|n
+Newcastle United|England|2014/15|Home|stripes|#241F20|#FFFFFF|over|n
+Cheltenham Town|England|2014/15|Home|stripes|#C8102E|#FFFFFF|over|n
+Carlisle United|England|2012/13|Home|plain|#003DA5|#FFFFFF|base|n
+Portsmouth|England|2014/15|Home|plain|#001489|#FFFFFF|base|n
+Northampton Town|England|2012/13|Home|plain|#7A1732|#FFFFFF|base|n
+York City|England|2012/13|Home|plain|#C8102E|#FFFFFF|base|n
+Barnsley|England|2010/11|Home|plain|#E4002B|#FFFFFF|base|n
+Birmingham City|England|2018/19|Home|plain|#205AA3|#FFFFFF|base|n
+Peterborough United|England|2016/17|Home|plain|#0057B8|#FFFFFF|base|n
+Yeovil Town|England|2010/11|Home|plain|#009639|#FFFFFF|base|n
+Forest Green Rovers|England|2010/11|Home|plain|#00A650|#1A1A1A|base|n
+Wrexham|England|2012/13|Home|plain|#D2122E|#FFFFFF|base|n
+Oldham Athletic|England|2016/17|Home|plain|#0A4FA0|#FFFFFF|base|n
+Everton|England|2014/15|Home|plain|#003399|#FFFFFF|base|n
+West Ham United|England|2014/15|Home|plain|#7A263A|#1BB1E7|base|n
+Wimbledon|England|2018/19|Home|plain|#001C58|#FFE600|base|n
+Blackpool|England|2018/19|Home|plain|#F68712|#FFFFFF|base|n
+Bournemouth|England|2018/19|Home|stripes|#DA291C|#1A1A1A|base|n
+Bradford City|England|2010/11|Home|stripes|#7A263A|#FFB81C|base|n
+Brighton|England|2018/19|Home|stripes|#0057B8|#FFFFFF|over|n
+Leicester City|England|2018/19|Home|plain|#003090|#FFFFFF|base|n
+Sunderland|England|2014/15|Home|stripes|#EB172B|#FFFFFF|over|n
+Doncaster Rovers|England|2010/11|Home|hoops|#DA291C|#FFFFFF|over|n
+Hull City|England|2016/17|Home|stripes|#F5A12D|#1A1A1A|base|n
+Stevenage|England|2012/13|Home|plain|#C8102E|#FFFFFF|base|n
+Wigan Athletic|England|2010/11|Home|stripes|#0055A4|#FFFFFF|over|n
+Doncaster Rovers|England|2012/13|Home|hoops|#DA291C|#FFFFFF|over|n
+Ipswich Town|England|2018/19|Home|plain|#0044A9|#FFFFFF|base|n
+Bristol City|England|2018/19|Home|plain|#D81E38|#FFFFFF|base|n
+Gillingham|England|2014/15|Home|plain|#0A4FA0|#FFFFFF|base|n
+Crawley Town|England|2012/13|Home|plain|#C8102E|#FFFFFF|base|n
+Hartlepool United|England|2016/17|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Southend United|England|2016/17|Home|plain|#003DA5|#FFFFFF|base|n
+Exeter City|England|1995/96|Home|stripes|#C8102E|#FFFFFF|over|n
+Luton Town|England|1993/94|Home|plain|#F78F1E|#002D62|base|n
+Blackpool|England|1991/92|Home|plain|#F68712|#FFFFFF|base|n
+Swindon Town|England|1999/2000|Home|plain|#C8102E|#FFFFFF|base|n
+West Ham United|England|1993/94|Home|plain|#7A263A|#1BB1E7|base|n
+Middlesbrough|England|1993/94|Home|chest|#E21C38|#FFFFFF|base|n
+Walsall|England|1997/98|Home|plain|#E4002B|#1A1A1A|base|n
+Coventry City|England|1991/92|Home|plain|#78D0F3|#FFFFFF|base|n
+Torquay United|England|1991/92|Home|plain|#FFD700|#0A2A5D|base|n
+Crewe Alexandra|England|1993/94|Home|plain|#E4002B|#FFFFFF|base|n
+Leyton Orient|England|1999/2000|Home|plain|#E4002B|#FFFFFF|base|n
+Northampton Town|England|1995/96|Home|plain|#7A1732|#FFFFFF|base|n
+Sheffield United|England|1995/96|Home|stripes|#EC2227|#FFFFFF|over|n
+Manchester City|England|1999/2000|Home|plain|#6CABDD|#FFFFFF|base|n
+Brighton|England|1995/96|Home|stripes|#0057B8|#FFFFFF|over|n
+Carlisle United|England|1995/96|Home|plain|#003DA5|#FFFFFF|base|n
+Chesterfield|England|1991/92|Home|plain|#005CA9|#FFFFFF|base|n
+Norwich City|England|1999/2000|Home|plain|#FFF200|#00A650|base|n
+Bristol Rovers|England|1991/92|Home|hoops|#0072CE|#FFFFFF|over|n
+Aston Villa|England|1993/94|Home|plain|#670E36|#95BFE5|base|n
+Wimbledon|England|1997/98|Home|plain|#001C58|#FFE600|base|n
+Crystal Palace|England|1999/2000|Home|stripes|#1B458F|#C4122E|over|n
+Chelsea|England|1999/2000|Home|plain|#034694|#FFFFFF|base|n
+Scunthorpe United|England|1991/92|Home|plain|#7A263A|#87CEEB|base|n
+Millwall|England|1991/92|Home|plain|#001F5B|#FFFFFF|base|n
+Blackburn Rovers|England|1991/92|Home|halves|#009EE0|#FFFFFF|over|n
+Burnley|England|1999/2000|Home|plain|#6C1D45|#97D4E9|base|n
+Queens Park Rangers|England|1995/96|Home|hoops|#1D5BA4|#FFFFFF|over|n
+Rochdale|England|1991/92|Home|plain|#0A4FA0|#FFFFFF|base|n
+Barnsley|England|1999/2000|Home|plain|#E4002B|#FFFFFF|base|n
+Stoke City|England|1993/94|Home|stripes|#E03A3E|#FFFFFF|over|n
+Brentford|England|1999/2000|Home|stripes|#E30613|#FFFFFF|over|n
+Birmingham City|England|1993/94|Home|plain|#205AA3|#FFFFFF|base|n
+Southampton|England|1999/2000|Home|stripes|#D71920|#FFFFFF|over|n
+Newcastle United|England|1997/98|Home|stripes|#241F20|#FFFFFF|over|n
+Gillingham|England|1991/92|Home|plain|#0A4FA0|#FFFFFF|base|n
+Oxford United|England|1991/92|Home|plain|#FFD100|#14315E|base|n
+Mansfield Town|England|1999/2000|Home|plain|#FFB81C|#0A2A5D|base|n
+Hull City|England|1999/2000|Home|stripes|#F5A12D|#1A1A1A|base|n
+Everton|England|1991/92|Home|plain|#003399|#FFFFFF|base|n
+Wrexham|England|1995/96|Home|plain|#D2122E|#FFFFFF|base|n
+Sheffield Wednesday|England|1997/98|Home|stripes|#1B4C9C|#FFFFFF|over|n
+Southend United|England|1993/94|Home|plain|#003DA5|#FFFFFF|base|n
+Bristol City|England|1993/94|Home|plain|#D81E38|#FFFFFF|base|n
+Bradford City|England|1995/96|Home|stripes|#7A263A|#FFB81C|base|n
+Peterborough United|England|1991/92|Home|plain|#0057B8|#FFFFFF|base|n
+Shrewsbury Town|England|1999/2000|Home|plain|#0A4FA0|#F5A800|base|n
+Doncaster Rovers|England|1997/98|Home|hoops|#DA291C|#FFFFFF|over|n
+Manchester United|England|1999/2000|Home|plain|#DA291C|#FFFFFF|base|n
+Hartlepool United|England|1991/92|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Charlton Athletic|England|1999/2000|Home|plain|#D4021D|#FFFFFF|base|n
+West Bromwich Albion|England|1999/2000|Home|stripes|#122F67|#FFFFFF|over|n
+Rotherham United|England|1995/96|Home|plain|#DA291C|#FFFFFF|base|n
+Portsmouth|England|1999/2000|Home|plain|#001489|#FFFFFF|base|n
+York City|England|1991/92|Home|plain|#C8102E|#FFFFFF|base|n
+Leicester City|England|1993/94|Home|plain|#003090|#FFFFFF|base|n
+Watford|England|1999/2000|Home|plain|#FBEE23|#ED2127|base|n
+Wolverhampton|England|1999/2000|Home|plain|#FDB913|#231F20|base|n
+Huddersfield Town|England|1997/98|Home|stripes|#0E63AD|#FFFFFF|over|n
+Oldham Athletic|England|1995/96|Home|plain|#0A4FA0|#FFFFFF|base|n
+Cambridge United|England|1995/96|Home|plain|#F5A800|#1A1A1A|base|n
+Colchester United|England|1993/94|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Liverpool|England|1993/94|Home|plain|#C8102E|#FFFFFF|base|n
+Cardiff City|England|1995/96|Home|plain|#0070B5|#FFFFFF|base|n
+Reading|England|1993/94|Home|hoops|#004494|#FFFFFF|over|n
+Nottingham Forest|England|1997/98|Home|plain|#DD0000|#FFFFFF|base|n
+Bournemouth|England|1997/98|Home|stripes|#DA291C|#1A1A1A|base|n
+Wigan Athletic|England|1997/98|Home|stripes|#0055A4|#FFFFFF|over|n
+Wycombe Wanderers|England|1991/92|Home|halves|#6CACE4|#14315E|over|n
+Stockport County|England|1991/92|Home|plain|#0A2A5D|#FFFFFF|base|n
+Sunderland|England|1995/96|Home|stripes|#EB172B|#FFFFFF|over|n
+Plymouth Argyle|England|1993/94|Home|plain|#00543C|#FFFFFF|base|n
+Arsenal|England|1995/96|Home|plain|#EF0107|#FFFFFF|base|n
+Cheltenham Town|England|1997/98|Home|stripes|#C8102E|#FFFFFF|over|n
+Ipswich Town|England|1999/2000|Home|plain|#0044A9|#FFFFFF|base|n
+Lincoln City|England|1993/94|Home|stripes|#C8102E|#FFFFFF|over|n
+Luton Town|England|1995/96|Home|plain|#F78F1E|#002D62|base|n
+Crewe Alexandra|England|1991/92|Home|plain|#E4002B|#FFFFFF|base|n
+Chelsea|England|1997/98|Home|plain|#034694|#FFFFFF|base|n
+Coventry City|England|1997/98|Home|plain|#78D0F3|#FFFFFF|base|n
+Southampton|England|1982/83|Home|stripes|#D71920|#FFFFFF|over|n
+Crewe Alexandra|England|1984/85|Home|plain|#E4002B|#FFFFFF|base|n
+Portsmouth|England|1986/87|Home|plain|#001489|#FFFFFF|base|n
+Arsenal|England|1984/85|Home|plain|#EF0107|#FFFFFF|base|n
+Mansfield Town|England|1980/81|Home|plain|#FFB81C|#0A2A5D|base|n
+Middlesbrough|England|1984/85|Home|chest|#E21C38|#FFFFFF|base|n
+Crystal Palace|England|1988/89|Home|stripes|#1B458F|#C4122E|over|n
+Stoke City|England|1982/83|Home|stripes|#E03A3E|#FFFFFF|over|n
+Wimbledon|England|1986/87|Home|plain|#001C58|#FFE600|base|n
+Carlisle United|England|1986/87|Home|plain|#003DA5|#FFFFFF|base|n
+Watford|England|1984/85|Home|plain|#FBEE23|#ED2127|base|n
+West Ham United|England|1982/83|Home|plain|#7A263A|#1BB1E7|base|n
+Coventry City|England|1982/83|Home|plain|#78D0F3|#FFFFFF|base|n
+Manchester City|England|1986/87|Home|plain|#6CABDD|#FFFFFF|base|n
+Sunderland|England|1984/85|Home|stripes|#EB172B|#FFFFFF|over|n
+Chesterfield|England|1984/85|Home|plain|#005CA9|#FFFFFF|base|n
+Millwall|England|1986/87|Home|plain|#001F5B|#FFFFFF|base|n
+Gillingham|England|1980/81|Home|plain|#0A4FA0|#FFFFFF|base|n
+Bradford City|England|1988/89|Home|stripes|#7A263A|#FFB81C|base|n
+Bristol City|England|1984/85|Home|plain|#D81E38|#FFFFFF|base|n
+Sheffield Wednesday|England|1980/81|Home|stripes|#1B4C9C|#FFFFFF|over|n
+Doncaster Rovers|England|1980/81|Home|hoops|#DA291C|#FFFFFF|over|n
+Plymouth Argyle|England|1984/85|Home|plain|#00543C|#FFFFFF|base|n
+Wigan Athletic|England|1980/81|Home|stripes|#0055A4|#FFFFFF|over|n
+Cardiff City|England|1988/89|Home|plain|#0070B5|#FFFFFF|base|n
+Colchester United|England|1986/87|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Reading|England|1986/87|Home|hoops|#004494|#FFFFFF|over|n
+Liverpool|England|1982/83|Home|plain|#C8102E|#FFFFFF|base|n
+Manchester United|England|1986/87|Home|plain|#DA291C|#FFFFFF|base|n
+Sheffield United|England|1988/89|Home|stripes|#EC2227|#FFFFFF|over|n
+Queens Park Rangers|England|1982/83|Home|hoops|#1D5BA4|#FFFFFF|over|n
+Hartlepool United|England|1986/87|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Birmingham City|England|1984/85|Home|plain|#205AA3|#FFFFFF|base|n
+Walsall|England|1986/87|Home|plain|#E4002B|#1A1A1A|base|n
+Huddersfield Town|England|1986/87|Home|stripes|#0E63AD|#FFFFFF|over|n
+Wolverhampton|England|1982/83|Home|plain|#FDB913|#231F20|base|n
+Lincoln City|England|1984/85|Home|stripes|#C8102E|#FFFFFF|over|n
+Rochdale|England|1988/89|Home|plain|#0A4FA0|#FFFFFF|base|n
+Leyton Orient|England|1986/87|Home|plain|#E4002B|#FFFFFF|base|n
+Stockport County|England|1986/87|Home|plain|#0A2A5D|#FFFFFF|base|n
+Everton|England|1988/89|Home|plain|#003399|#FFFFFF|base|n
+Nottingham Forest|England|1988/89|Home|plain|#DD0000|#FFFFFF|base|n
+Luton Town|England|1984/85|Home|plain|#F78F1E|#002D62|base|n
+Aston Villa|England|1986/87|Home|plain|#670E36|#95BFE5|base|n
+Northampton Town|England|1984/85|Home|plain|#7A1732|#FFFFFF|base|n
+Oldham Athletic|England|1982/83|Home|plain|#0A4FA0|#FFFFFF|base|n
+Newcastle United|England|1988/89|Home|stripes|#241F20|#FFFFFF|over|n
+Brighton|England|1986/87|Home|stripes|#0057B8|#FFFFFF|over|n
+Blackburn Rovers|England|1982/83|Home|halves|#009EE0|#FFFFFF|over|n
+West Bromwich Albion|England|1982/83|Home|stripes|#122F67|#FFFFFF|over|n
+Torquay United|England|1986/87|Home|plain|#FFD700|#0A2A5D|base|n
+Barnsley|England|1988/89|Home|plain|#E4002B|#FFFFFF|base|n
+Norwich City|England|1982/83|Home|plain|#FFF200|#00A650|base|n
+Brentford|England|1982/83|Home|stripes|#E30613|#FFFFFF|over|n
+Swindon Town|England|1988/89|Home|plain|#C8102E|#FFFFFF|base|n
+Oxford United|England|1980/81|Home|plain|#FFD100|#14315E|base|n
+York City|England|1980/81|Home|plain|#C8102E|#FFFFFF|base|n
+Hull City|England|1988/89|Home|stripes|#F5A12D|#1A1A1A|base|n
+Chelsea|England|1982/83|Home|plain|#034694|#FFFFFF|base|n
+Ipswich Town|England|1982/83|Home|plain|#0044A9|#FFFFFF|base|n
+Brighton|England|2024/25|Home|stripes|#0057B8|#FFFFFF|over|n
+Exeter City|England|2022/23|Home|stripes|#C8102E|#FFFFFF|over|n
+Yeovil Town|England|2022/23|Home|plain|#009639|#FFFFFF|base|n
+Sutton United|England|2023/24|Home|plain|#F5A800|#1A1A1A|base|n
+Cardiff City|England|2024/25|Home|plain|#0070B5|#FFFFFF|base|n
+Newport County|England|2023/24|Home|plain|#F5A800|#1A1A1A|base|n
+Walsall|England|2023/24|Home|plain|#E4002B|#1A1A1A|base|n
+Wimbledon|England|2024/25|Home|plain|#001C58|#FFE600|base|n
+Bournemouth|England|2024/25|Home|stripes|#DA291C|#1A1A1A|base|n
+Hull City|England|2021/22|Home|stripes|#F5A12D|#1A1A1A|base|n
+Northampton Town|England|2020/21|Home|plain|#7A1732|#FFFFFF|base|n
+Portsmouth|England|2021/22|Home|plain|#001489|#FFFFFF|base|n
+Burton Albion|England|2023/24|Home|plain|#FFD100|#1A1A1A|base|n
+Barrow|England|2024/25|Home|plain|#0A4FA0|#FFFFFF|base|n
+Morecambe|England|2020/21|Home|plain|#C8102E|#FFFFFF|base|n
+Doncaster Rovers|England|2022/23|Home|hoops|#DA291C|#FFFFFF|over|n
+Leicester City|England|2022/23|Home|plain|#003090|#FFFFFF|base|n
+Crystal Palace|England|2022/23|Home|stripes|#1B458F|#C4122E|over|n
+Brentford|England|2020/21|Home|stripes|#E30613|#FFFFFF|over|n
+Stevenage|England|2021/22|Home|plain|#C8102E|#FFFFFF|base|n
+Shrewsbury Town|England|2024/25|Home|plain|#0A4FA0|#F5A800|base|n
+Salford City|England|2023/24|Home|plain|#E4002B|#1A1A1A|base|n
+Newcastle United|England|2021/22|Home|stripes|#241F20|#FFFFFF|over|n
+Oldham Athletic|England|2023/24|Home|plain|#0A4FA0|#FFFFFF|base|n
+Crawley Town|England|2024/25|Home|plain|#C8102E|#FFFFFF|base|n
+Wrexham|England|2022/23|Home|plain|#D2122E|#FFFFFF|base|n
+Bradford City|England|2021/22|Home|stripes|#7A263A|#FFB81C|base|n
+Gillingham|England|2021/22|Home|plain|#0A4FA0|#FFFFFF|base|n
+West Ham United|England|2021/22|Home|plain|#7A263A|#1BB1E7|base|n
+Crewe Alexandra|England|2023/24|Home|plain|#E4002B|#FFFFFF|base|n
+Manchester United|England|2024/25|Home|plain|#DA291C|#FFFFFF|base|n
+Sheffield Wednesday|England|2021/22|Home|stripes|#1B4C9C|#FFFFFF|over|n
+Stockport County|England|2022/23|Home|plain|#0A2A5D|#FFFFFF|base|n
+West Bromwich Albion|England|2023/24|Home|stripes|#122F67|#FFFFFF|over|n
+Arsenal|England|2021/22|Home|plain|#EF0107|#FFFFFF|base|n
+Charlton Athletic|England|2024/25|Home|plain|#D4021D|#FFFFFF|base|n
+Queens Park Rangers|England|2020/21|Home|hoops|#1D5BA4|#FFFFFF|over|n
+Cheltenham Town|England|2024/25|Home|stripes|#C8102E|#FFFFFF|over|n
+Manchester City|England|2024/25|Home|plain|#6CABDD|#FFFFFF|base|n
+Millwall|England|2024/25|Home|plain|#001F5B|#FFFFFF|base|n
+Fleetwood Town|England|2024/25|Home|plain|#C8102E|#FFFFFF|base|n
+Nottingham Forest|England|2020/21|Home|plain|#DD0000|#FFFFFF|base|n
+Lincoln City|England|2020/21|Home|stripes|#C8102E|#FFFFFF|over|n
+Liverpool|England|2024/25|Home|plain|#C8102E|#FFFFFF|base|n
+Blackpool|England|2020/21|Home|plain|#F68712|#FFFFFF|base|n
+Brentford|England|1979/80|Home|stripes|#E30613|#FFFFFF|over|n
+West Bromwich Albion|England|1977/78|Home|stripes|#122F67|#FFFFFF|over|n
+Plymouth Argyle|England|1979/80|Home|plain|#00543C|#FFFFFF|base|n
+Blackpool|England|1971/72|Home|plain|#F68712|#FFFFFF|base|n
+West Ham United|England|1977/78|Home|plain|#7A263A|#1BB1E7|base|n
+Manchester United|England|1977/78|Home|plain|#DA291C|#FFFFFF|base|n
+Crystal Palace|England|1975/76|Home|stripes|#1B458F|#C4122E|over|n
+Everton|England|1975/76|Home|plain|#003399|#FFFFFF|base|n
+Exeter City|England|1977/78|Home|stripes|#C8102E|#FFFFFF|over|n
+Newcastle United|England|1979/80|Home|stripes|#241F20|#FFFFFF|over|n
+Oldham Athletic|England|1979/80|Home|plain|#0A4FA0|#FFFFFF|base|n
+Rotherham United|England|1979/80|Home|plain|#DA291C|#FFFFFF|base|n
+Chelsea|England|1973/74|Home|plain|#034694|#FFFFFF|base|n
+Wolverhampton|England|1971/72|Home|plain|#FDB913|#231F20|base|n
+Luton Town|England|1975/76|Home|plain|#F78F1E|#002D62|base|n
+Hartlepool United|England|1977/78|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Leyton Orient|England|1977/78|Home|plain|#E4002B|#FFFFFF|base|n
+Colchester United|England|1971/72|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Middlesbrough|England|1977/78|Home|chest|#E21C38|#FFFFFF|base|n
+Charlton Athletic|England|1977/78|Home|plain|#D4021D|#FFFFFF|base|n
+Portsmouth|England|1965/66|Home|plain|#001489|#FFFFFF|base|n
+Colchester United|England|1967/68|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Wrexham|England|1967/68|Home|plain|#D2122E|#FFFFFF|base|n
+Brighton|England|1969/70|Home|stripes|#0057B8|#FFFFFF|over|n
+Huddersfield Town|England|1969/70|Home|stripes|#0E63AD|#FFFFFF|over|n
+Brentford|England|1967/68|Home|stripes|#E30613|#FFFFFF|over|n
+Stoke City|England|1967/68|Home|stripes|#E03A3E|#FFFFFF|over|n
+Blackburn Rovers|England|1963/64|Home|halves|#009EE0|#FFFFFF|over|n
+Gillingham|England|1969/70|Home|plain|#0A4FA0|#FFFFFF|base|n
+Queens Park Rangers|England|1969/70|Home|hoops|#1D5BA4|#FFFFFF|over|n
+Tunisia|National|2000|Home|plain|#E70013|#FFFFFF|base|n
+Panama|National|2000|Home|plain|#E4002B|#14315E|base|n
+Croatia|National|2000|Home|checks|#FF0000|#FFFFFF|base|n
+Czech Republic|National|2004|Home|plain|#D7141A|#FFFFFF|base|n
+Wales|National|2000|Home|plain|#C8102E|#00A650|base|n
+Nigeria|National|2000|Home|plain|#008751|#FFFFFF|base|n
+South Africa|National|2004|Home|plain|#FFD100|#00843D|base|n
+Canada|National|2006|Home|plain|#E4002B|#FFFFFF|base|n
+Northern Ireland|National|2004|Home|plain|#14315E|#FFFFFF|base|n
+China|National|2004|Home|plain|#E4002B|#FFE500|base|n
+Japan|National|2008|Home|plain|#0B318F|#FFFFFF|base|n
+Morocco|National|2000|Home|plain|#C1272D|#006233|base|n
+Norway|National|2008|Home|plain|#BA0C2F|#14315E|base|n
+Italy|National|2004|Home|plain|#0066CC|#FFFFFF|base|n
+Spain|National|2006|Home|plain|#C60B1E|#FFCE00|base|n
+Republic of Ireland|National|2002|Home|plain|#009A44|#FFFFFF|base|n
+Chile|National|2004|Home|plain|#D52B1E|#14315E|base|n
+Switzerland|National|2008|Home|plain|#D52B1E|#FFFFFF|base|n
+South Korea|National|2008|Home|plain|#CD2E3A|#14315E|base|n
+Senegal|National|2002|Home|plain|#00853F|#FDEF42|base|n
+Cote d Ivoire|National|2004|Home|plain|#F77F00|#FFFFFF|base|n
+Thailand|National|2004|Home|plain|#0057B8|#E4002B|base|n
+Uruguay|National|2008|Home|plain|#5CBFEB|#1A1A1A|base|n
+Bolivia|National|2002|Home|plain|#00A650|#FFFFFF|base|n
+Scotland|National|2006|Home|plain|#003087|#FFFFFF|base|n
+Russia|National|2002|Home|plain|#D52B1E|#FFFFFF|base|n
+Portugal|National|2008|Home|plain|#C50E2C|#006600|base|n
+Qatar|National|2002|Home|plain|#8A1538|#FFFFFF|base|n
+Zambia|National|2000|Home|plain|#00A650|#F77F00|base|n
+China|National|2012|Home|plain|#E4002B|#FFE500|base|n
+Belgium|National|2012|Home|plain|#E62B2B|#1A1A1A|base|n
+Brazil|National|2018|Home|plain|#FFDF00|#009739|base|n
+Qatar|National|2018|Home|plain|#8A1538|#FFFFFF|base|n
+Romania|National|2012|Home|plain|#FFE500|#0057B8|base|n
+Iraq|National|2014|Home|plain|#00A650|#FFFFFF|base|n
+Switzerland|National|2016|Home|plain|#D52B1E|#FFFFFF|base|n
+Scotland|National|2014|Home|plain|#003087|#FFFFFF|base|n
+Vietnam|National|2014|Home|plain|#E4002B|#FFE500|base|n
+Bolivia|National|2014|Home|plain|#00A650|#FFFFFF|base|n
+Zambia|National|2018|Home|plain|#00A650|#F77F00|base|n
+Honduras|National|2016|Home|plain|#0057B8|#FFFFFF|base|n
+Colombia|National|2018|Home|plain|#FCD116|#003893|base|n
+Cote d Ivoire|National|2014|Home|plain|#F77F00|#FFFFFF|base|n
+Senegal|National|2016|Home|plain|#00853F|#FDEF42|base|n
+Uruguay|National|2012|Home|plain|#5CBFEB|#1A1A1A|base|n
+Tunisia|National|2010|Home|plain|#E70013|#FFFFFF|base|n
+Wales|National|2018|Home|plain|#C8102E|#00A650|base|n
+Slovakia|National|2018|Home|plain|#0057B8|#FFFFFF|base|n
+Trinidad and Tobago|National|2018|Home|plain|#E4002B|#1A1A1A|base|n
+Turkey|National|2010|Home|plain|#E30A17|#FFFFFF|base|n
+France|National|2014|Home|plain|#21304F|#FFFFFF|base|n
+Denmark|National|2012|Home|plain|#C60C30|#FFFFFF|base|n
+Paraguay|National|2014|Home|stripes|#E4002B|#FFFFFF|over|n
+Sweden|National|2012|Home|plain|#FFCD00|#005293|base|n
+Austria|National|2010|Home|plain|#ED2939|#FFFFFF|base|n
+Russia|National|1990|Home|plain|#D52B1E|#FFFFFF|base|n
+Ecuador|National|1994|Home|plain|#FFDD00|#14315E|base|n
+Chile|National|1994|Home|plain|#D52B1E|#14315E|base|n
+Trinidad and Tobago|National|1996|Home|plain|#E4002B|#1A1A1A|base|n
+Iraq|National|1992|Home|plain|#00A650|#FFFFFF|base|n
+South Africa|National|1994|Home|plain|#FFD100|#00843D|base|n
+Colombia|National|1994|Home|plain|#FCD116|#003893|base|n
+Italy|National|1996|Home|plain|#0066CC|#FFFFFF|base|n
+Jamaica|National|1992|Home|plain|#FFD100|#1A1A1A|base|n
+DR Congo|National|1998|Home|plain|#0057B8|#FFD100|base|n
+Greece|National|1998|Home|plain|#0D5EAF|#FFFFFF|base|n
+Czech Republic|National|1994|Home|plain|#D7141A|#FFFFFF|base|n
+Spain|National|1996|Home|plain|#C60B1E|#FFCE00|base|n
+Cameroon|National|1996|Home|plain|#007A5E|#FCD116|base|n
+Morocco|National|1990|Home|plain|#C1272D|#006233|base|n
+Senegal|National|1998|Home|plain|#00853F|#FDEF42|base|n
+Paraguay|National|1994|Home|stripes|#E4002B|#FFFFFF|over|n
+Nigeria|National|1996|Home|plain|#008751|#FFFFFF|base|n
+Romania|National|1992|Home|plain|#FFE500|#0057B8|base|n
+Australia|National|1998|Home|plain|#FFCD00|#00843D|base|n
+Ukraine|National|1998|Home|plain|#FFD500|#0057B8|base|n
+Chile|National|1986|Home|plain|#D52B1E|#14315E|base|n
+Brazil|National|1986|Home|plain|#FFDF00|#009739|base|n
+Finland|National|1986|Home|plain|#0057B8|#FFFFFF|base|n
+Norway|National|1982|Home|plain|#BA0C2F|#14315E|base|n
+Northern Ireland|National|1982|Home|plain|#14315E|#FFFFFF|base|n
+Scotland|National|1988|Home|plain|#003087|#FFFFFF|base|n
+Spain|National|1982|Home|plain|#C60B1E|#FFCE00|base|n
+Colombia|National|1986|Home|plain|#FCD116|#003893|base|n
+Netherlands|National|1986|Home|plain|#FF6900|#FFFFFF|base|n
+Iraq|National|1986|Home|plain|#00A650|#FFFFFF|base|n
+Hungary|National|1988|Home|plain|#C8102E|#00954C|base|n
+Mali|National|1988|Home|plain|#00A650|#FFD100|base|n
+Belgium|National|1984|Home|plain|#E62B2B|#1A1A1A|base|n
+South Korea|National|1984|Home|plain|#CD2E3A|#14315E|base|n
+Argentina|National|1980|Home|stripes|#75AADB|#FFFFFF|over|n
+China|National|1982|Home|plain|#E4002B|#FFE500|base|n
+Morocco|National|2022|Home|plain|#C1272D|#006233|base|n
+Czech Republic|National|2022|Home|plain|#D7141A|#FFFFFF|base|n
+Mexico|National|2022|Home|plain|#006847|#FFFFFF|base|n
+Zambia|National|2021|Home|plain|#00A650|#F77F00|base|n
+Brazil|National|2020|Home|plain|#FFDF00|#009739|base|n
+Northern Ireland|National|2022|Home|plain|#14315E|#FFFFFF|base|n
+Finland|National|2024|Home|plain|#0057B8|#FFFFFF|base|n
+Greece|National|2020|Home|plain|#0D5EAF|#FFFFFF|base|n
+Slovakia|National|2024|Home|plain|#0057B8|#FFFFFF|base|n
+Belgium|National|2022|Home|plain|#E62B2B|#1A1A1A|base|n
+Sweden|National|2024|Home|plain|#FFCD00|#005293|base|n
+Paraguay|National|2021|Home|stripes|#E4002B|#FFFFFF|over|n
+South Korea|National|1976|Home|plain|#CD2E3A|#14315E|base|n
+Austria|National|1974|Home|plain|#ED2939|#FFFFFF|base|n
+Paraguay|National|1970|Home|stripes|#E4002B|#FFFFFF|over|n
+Hungary|National|1974|Home|plain|#C8102E|#00954C|base|n
+Spain|National|1978|Home|plain|#C60B1E|#FFCE00|base|n
+Mexico|National|1966|Home|plain|#006847|#FFFFFF|base|n
+Scotland|National|1968|Home|plain|#003087|#FFFFFF|base|n
+Romania|National|1962|Home|plain|#FFE500|#0057B8|base|n
+Deportivo Alaves|Spain|2006/07|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Mallorca|Spain|2000/01|Home|plain|#E30613|#1A1A1A|base|n
+Hercules|Spain|2004/05|Home|stripes|#0A2A5D|#FFFFFF|over|n
+Elche|Spain|2006/07|Home|plain|#00954C|#FFFFFF|base|n
+SD Eibar|Spain|2000/01|Home|stripes|#14315E|#C8102E|base|n
+CD Tenerife|Spain|2006/07|Home|plain|#005CA9|#FFFFFF|base|n
+Real Oviedo|Spain|2006/07|Home|plain|#0057B8|#FFFFFF|base|n
+Recreativo Huelva|Spain|2004/05|Home|stripes|#0057B8|#FFFFFF|over|n
+Real Valladolid|Spain|2002/03|Home|stripes|#6A2B85|#FFFFFF|over|n
+SD Ponferradina|Spain|2002/03|Home|plain|#14315E|#FFFFFF|base|n
+Cadiz|Spain|2006/07|Home|plain|#FFE500|#14315E|base|n
+CD Leganes|Spain|2002/03|Home|plain|#005CA9|#FFFFFF|base|n
+Real Betis|Spain|2006/07|Home|stripes|#00954C|#FFFFFF|over|n
+Cordoba|Spain|2006/07|Home|stripes|#00954C|#FFFFFF|over|n
+Las Palmas|Spain|2004/05|Home|plain|#FFE500|#0057B8|base|n
+Real Murcia|Spain|2002/03|Home|plain|#E4002B|#FFFFFF|base|n
+SD Huesca|Spain|2000/01|Home|stripes|#0A2A5D|#C8102E|base|n
+CD Numancia|Spain|2008/09|Home|plain|#E4002B|#FFFFFF|base|n
+Granada|Spain|2000/01|Home|stripes|#C41230|#FFFFFF|over|n
+Villarreal|Spain|2006/07|Home|plain|#FFE667|#005187|base|n
+Real Sociedad|Spain|2002/03|Home|stripes|#0067B1|#FFFFFF|over|n
+Malaga|Spain|2008/09|Home|stripes|#0057B8|#FFFFFF|over|n
+Espanyol|Spain|2008/09|Home|stripes|#0067B1|#FFFFFF|over|n
+Atletico Madrid|Spain|2004/05|Home|stripes|#CB3524|#FFFFFF|over|n
+Barcelona|Spain|2000/01|Home|stripes|#A50044|#004D98|base|n
+Getafe|Spain|2004/05|Home|plain|#005CA9|#FFFFFF|base|n
+Levante|Spain|2004/05|Home|stripes|#0A4FA0|#8B1A3D|base|n
+Sporting Gijon|Spain|2006/07|Home|stripes|#E4002B|#FFFFFF|over|n
+Almeria|Spain|2004/05|Home|stripes|#E4002B|#FFFFFF|over|n
+Celta Vigo|Spain|2006/07|Home|plain|#8AC3EE|#FFFFFF|base|n
+Burgos|Spain|2008/09|Home|plain|#14315E|#FFFFFF|base|n
+Osasuna|Spain|2008/09|Home|plain|#C3132C|#14315E|base|n
+Racing Santander|Spain|2006/07|Home|stripes|#00954C|#FFFFFF|over|n
+Athletic Club|Spain|2008/09|Home|stripes|#EE2523|#FFFFFF|over|n
+Rayo Vallecano|Spain|2004/05|Home|sash|#E30613|#FFFFFF|over|n
+Deportivo La Coruna|Spain|2004/05|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Mallorca|Spain|2004/05|Home|plain|#E30613|#1A1A1A|base|n
+CD Tenerife|Spain|2008/09|Home|plain|#005CA9|#FFFFFF|base|n
+Real Oviedo|Spain|2002/03|Home|plain|#0057B8|#FFFFFF|base|n
+Deportivo Alaves|Spain|2008/09|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Cadiz|Spain|2000/01|Home|plain|#FFE500|#14315E|base|n
+CD Leganes|Spain|2008/09|Home|plain|#005CA9|#FFFFFF|base|n
+SD Ponferradina|Spain|2008/09|Home|plain|#14315E|#FFFFFF|base|n
+SD Eibar|Spain|2006/07|Home|stripes|#14315E|#C8102E|base|n
+Real Murcia|Spain|2006/07|Home|plain|#E4002B|#FFFFFF|base|n
+Burgos|Spain|2014/15|Home|plain|#14315E|#FFFFFF|base|n
+Cadiz|Spain|2018/19|Home|plain|#FFE500|#14315E|base|n
+Osasuna|Spain|2014/15|Home|plain|#C3132C|#14315E|base|n
+SD Ponferradina|Spain|2014/15|Home|plain|#14315E|#FFFFFF|base|n
+Levante|Spain|2010/11|Home|stripes|#0A4FA0|#8B1A3D|base|n
+Cordoba|Spain|2012/13|Home|stripes|#00954C|#FFFFFF|over|n
+Deportivo Alaves|Spain|2016/17|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Hercules|Spain|2016/17|Home|stripes|#0A2A5D|#FFFFFF|over|n
+CD Leganes|Spain|2016/17|Home|plain|#005CA9|#FFFFFF|base|n
+Recreativo Huelva|Spain|2012/13|Home|stripes|#0057B8|#FFFFFF|over|n
+CD Tenerife|Spain|2018/19|Home|plain|#005CA9|#FFFFFF|base|n
+Granada|Spain|2014/15|Home|stripes|#C41230|#FFFFFF|over|n
+Sporting Gijon|Spain|2012/13|Home|stripes|#E4002B|#FFFFFF|over|n
+Celta Vigo|Spain|2014/15|Home|plain|#8AC3EE|#FFFFFF|base|n
+Deportivo La Coruna|Spain|2012/13|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Espanyol|Spain|2016/17|Home|stripes|#0067B1|#FFFFFF|over|n
+Getafe|Spain|2010/11|Home|plain|#005CA9|#FFFFFF|base|n
+Elche|Spain|2014/15|Home|plain|#00954C|#FFFFFF|base|n
+CD Numancia|Spain|2016/17|Home|plain|#E4002B|#FFFFFF|base|n
+Real Oviedo|Spain|2012/13|Home|plain|#0057B8|#FFFFFF|base|n
+SD Eibar|Spain|2012/13|Home|stripes|#14315E|#C8102E|base|n
+Rayo Vallecano|Spain|2014/15|Home|sash|#E30613|#FFFFFF|over|n
+SD Huesca|Spain|2016/17|Home|stripes|#0A2A5D|#C8102E|base|n
+Atletico Madrid|Spain|2010/11|Home|stripes|#CB3524|#FFFFFF|over|n
+Almeria|Spain|2010/11|Home|stripes|#E4002B|#FFFFFF|over|n
+Racing Santander|Spain|2012/13|Home|stripes|#00954C|#FFFFFF|over|n
+Athletic Club|Spain|2012/13|Home|stripes|#EE2523|#FFFFFF|over|n
+Villarreal|Spain|2016/17|Home|plain|#FFE667|#005187|base|n
+Real Murcia|Spain|2010/11|Home|plain|#E4002B|#FFFFFF|base|n
+Barcelona|Spain|2012/13|Home|stripes|#A50044|#004D98|base|n
+Malaga|Spain|2010/11|Home|stripes|#0057B8|#FFFFFF|over|n
+Las Palmas|Spain|2018/19|Home|plain|#FFE500|#0057B8|base|n
+Real Valladolid|Spain|2016/17|Home|stripes|#6A2B85|#FFFFFF|over|n
+Real Sociedad|Spain|2016/17|Home|stripes|#0067B1|#FFFFFF|over|n
+Mallorca|Spain|2010/11|Home|plain|#E30613|#1A1A1A|base|n
+Real Betis|Spain|2010/11|Home|stripes|#00954C|#FFFFFF|over|n
+Osasuna|Spain|2018/19|Home|plain|#C3132C|#14315E|base|n
+Deportivo Alaves|Spain|2014/15|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Hercules|Spain|2010/11|Home|stripes|#0A2A5D|#FFFFFF|over|n
+CD Tenerife|Spain|2010/11|Home|plain|#005CA9|#FFFFFF|base|n
+CD Leganes|Spain|2018/19|Home|plain|#005CA9|#FFFFFF|base|n
+Athletic Club|Spain|1997/98|Home|stripes|#EE2523|#FFFFFF|over|n
+Deportivo Alaves|Spain|1995/96|Home|stripes|#0A4FA0|#FFFFFF|over|n
+CD Tenerife|Spain|1997/98|Home|plain|#005CA9|#FFFFFF|base|n
+Las Palmas|Spain|1999/2000|Home|plain|#FFE500|#0057B8|base|n
+Espanyol|Spain|1999/2000|Home|stripes|#0067B1|#FFFFFF|over|n
+Granada|Spain|1999/2000|Home|stripes|#C41230|#FFFFFF|over|n
+Levante|Spain|1997/98|Home|stripes|#0A4FA0|#8B1A3D|base|n
+Cadiz|Spain|1997/98|Home|plain|#FFE500|#14315E|base|n
+Getafe|Spain|1997/98|Home|plain|#005CA9|#FFFFFF|base|n
+Mallorca|Spain|1991/92|Home|plain|#E30613|#1A1A1A|base|n
+Hercules|Spain|1999/2000|Home|stripes|#0A2A5D|#FFFFFF|over|n
+CD Numancia|Spain|1995/96|Home|plain|#E4002B|#FFFFFF|base|n
+CD Leganes|Spain|1997/98|Home|plain|#005CA9|#FFFFFF|base|n
+Burgos|Spain|1991/92|Home|plain|#14315E|#FFFFFF|base|n
+Deportivo La Coruna|Spain|1999/2000|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Real Murcia|Spain|1997/98|Home|plain|#E4002B|#FFFFFF|base|n
+Elche|Spain|1993/94|Home|plain|#00954C|#FFFFFF|base|n
+Celta Vigo|Spain|1993/94|Home|plain|#8AC3EE|#FFFFFF|base|n
+Real Sociedad|Spain|1997/98|Home|stripes|#0067B1|#FFFFFF|over|n
+Racing Santander|Spain|1999/2000|Home|stripes|#00954C|#FFFFFF|over|n
+Real Betis|Spain|1995/96|Home|stripes|#00954C|#FFFFFF|over|n
+Recreativo Huelva|Spain|1997/98|Home|stripes|#0057B8|#FFFFFF|over|n
+SD Eibar|Spain|1995/96|Home|stripes|#14315E|#C8102E|base|n
+Villarreal|Spain|1997/98|Home|plain|#FFE667|#005187|base|n
+Real Oviedo|Spain|1993/94|Home|plain|#0057B8|#FFFFFF|base|n
+Barcelona|Spain|1991/92|Home|stripes|#A50044|#004D98|base|n
+Malaga|Spain|1995/96|Home|stripes|#0057B8|#FFFFFF|over|n
+Cordoba|Spain|1995/96|Home|stripes|#00954C|#FFFFFF|over|n
+Real Valladolid|Spain|1993/94|Home|stripes|#6A2B85|#FFFFFF|over|n
+Rayo Vallecano|Spain|1999/2000|Home|sash|#E30613|#FFFFFF|over|n
+Osasuna|Spain|1993/94|Home|plain|#C3132C|#14315E|base|n
+Atletico Madrid|Spain|1993/94|Home|stripes|#CB3524|#FFFFFF|over|n
+Sporting Gijon|Spain|1997/98|Home|stripes|#E4002B|#FFFFFF|over|n
+Racing Santander|Spain|1988/89|Home|stripes|#00954C|#FFFFFF|over|n
+Elche|Spain|1988/89|Home|plain|#00954C|#FFFFFF|base|n
+Real Valladolid|Spain|1988/89|Home|stripes|#6A2B85|#FFFFFF|over|n
+Rayo Vallecano|Spain|1988/89|Home|sash|#E30613|#FFFFFF|over|n
+Deportivo La Coruna|Spain|1982/83|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Granada|Spain|1984/85|Home|stripes|#C41230|#FFFFFF|over|n
+Espanyol|Spain|1982/83|Home|stripes|#0067B1|#FFFFFF|over|n
+Mallorca|Spain|1982/83|Home|plain|#E30613|#1A1A1A|base|n
+Osasuna|Spain|1988/89|Home|plain|#C3132C|#14315E|base|n
+Las Palmas|Spain|1984/85|Home|plain|#FFE500|#0057B8|base|n
+Deportivo Alaves|Spain|1986/87|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Athletic Club|Spain|1984/85|Home|stripes|#EE2523|#FFFFFF|over|n
+Cordoba|Spain|1980/81|Home|stripes|#00954C|#FFFFFF|over|n
+Real Murcia|Spain|1980/81|Home|plain|#E4002B|#FFFFFF|base|n
+CD Tenerife|Spain|1982/83|Home|plain|#005CA9|#FFFFFF|base|n
+Recreativo Huelva|Spain|1982/83|Home|stripes|#0057B8|#FFFFFF|over|n
+Real Oviedo|Spain|1980/81|Home|plain|#0057B8|#FFFFFF|base|n
+Levante|Spain|1984/85|Home|stripes|#0A4FA0|#8B1A3D|base|n
+Atletico Madrid|Spain|1988/89|Home|stripes|#CB3524|#FFFFFF|over|n
+Hercules|Spain|1986/87|Home|stripes|#0A2A5D|#FFFFFF|over|n
+Barcelona|Spain|1988/89|Home|stripes|#A50044|#004D98|base|n
+Cadiz|Spain|1980/81|Home|plain|#FFE500|#14315E|base|n
+Celta Vigo|Spain|1986/87|Home|plain|#8AC3EE|#FFFFFF|base|n
+Villarreal|Spain|1982/83|Home|plain|#FFE667|#005187|base|n
+Real Betis|Spain|1982/83|Home|stripes|#00954C|#FFFFFF|over|n
+Las Palmas|Spain|2020/21|Home|plain|#FFE500|#0057B8|base|n
+Barcelona|Spain|2024/25|Home|stripes|#A50044|#004D98|base|n
+Recreativo Huelva|Spain|2021/22|Home|stripes|#0057B8|#FFFFFF|over|n
+CD Leganes|Spain|2022/23|Home|plain|#005CA9|#FFFFFF|base|n
+Hercules|Spain|2020/21|Home|stripes|#0A2A5D|#FFFFFF|over|n
+Villarreal|Spain|2021/22|Home|plain|#FFE667|#005187|base|n
+Real Oviedo|Spain|2020/21|Home|plain|#0057B8|#FFFFFF|base|n
+Deportivo La Coruna|Spain|2020/21|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Espanyol|Spain|2020/21|Home|stripes|#0067B1|#FFFFFF|over|n
+Rayo Vallecano|Spain|2021/22|Home|sash|#E30613|#FFFFFF|over|n
+Celta Vigo|Spain|2021/22|Home|plain|#8AC3EE|#FFFFFF|base|n
+Malaga|Spain|2020/21|Home|stripes|#0057B8|#FFFFFF|over|n
+Burgos|Spain|2020/21|Home|plain|#14315E|#FFFFFF|base|n
+CD Tenerife|Spain|2020/21|Home|plain|#005CA9|#FFFFFF|base|n
+Getafe|Spain|2024/25|Home|plain|#005CA9|#FFFFFF|base|n
+Racing Santander|Spain|2022/23|Home|stripes|#00954C|#FFFFFF|over|n
+CD Numancia|Spain|2020/21|Home|plain|#E4002B|#FFFFFF|base|n
+Cordoba|Spain|2020/21|Home|stripes|#00954C|#FFFFFF|over|n
+SD Ponferradina|Spain|2024/25|Home|plain|#14315E|#FFFFFF|base|n
+Cordoba|Spain|1979/80|Home|stripes|#00954C|#FFFFFF|over|n
+Deportivo La Coruna|Spain|1977/78|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Mallorca|Spain|1975/76|Home|plain|#E30613|#1A1A1A|base|n
+Levante|Spain|1975/76|Home|stripes|#0A4FA0|#8B1A3D|base|n
+Barcelona|Spain|1973/74|Home|stripes|#A50044|#004D98|base|n
+Sporting Gijon|Spain|1977/78|Home|stripes|#E4002B|#FFFFFF|over|n
+Burgos|Spain|1975/76|Home|plain|#14315E|#FFFFFF|base|n
+Deportivo Alaves|Spain|1971/72|Home|stripes|#0A4FA0|#FFFFFF|over|n
+Atletico Madrid|Spain|1963/64|Home|stripes|#CB3524|#FFFFFF|over|n
+Espanyol|Spain|1965/66|Home|stripes|#0067B1|#FFFFFF|over|n
+Real Oviedo|Spain|1965/66|Home|plain|#0057B8|#FFFFFF|base|n
+Real Sociedad|Spain|1967/68|Home|stripes|#0067B1|#FFFFFF|over|n
+Juventus|Italy|2000/01|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Bologna|Italy|2006/07|Home|stripes|#9F1B32|#14315E|base|n
+Catania|Italy|2006/07|Home|stripes|#C8102E|#14315E|base|n
+Como|Italy|2004/05|Home|plain|#0057B8|#FFFFFF|base|n
+Lazio|Italy|2004/05|Home|plain|#87D8F7|#FFFFFF|base|n
+Sassuolo|Italy|2002/03|Home|stripes|#00A752|#1A1A1A|base|n
+Pisa|Italy|2006/07|Home|stripes|#14315E|#1A1A1A|base|n
+Perugia|Italy|2004/05|Home|plain|#C8102E|#FFFFFF|base|n
+Salernitana|Italy|2004/05|Home|stripes|#6B1F2E|#FFFFFF|over|n
+Torino|Italy|2004/05|Home|plain|#881010|#FFFFFF|base|n
+Venezia|Italy|2002/03|Home|plain|#00653A|#F58220|base|n
+AS Roma|Italy|2004/05|Home|plain|#8E1F2F|#F0BC42|base|n
+Cagliari|Italy|2008/09|Home|halves|#B01E28|#14315E|over|n
+Internazionale|Italy|2002/03|Home|stripes|#0068A8|#1A1A1A|base|n
+Lecce|Italy|2008/09|Home|stripes|#F5D000|#E2001A|base|n
+Palermo|Italy|2008/09|Home|plain|#F4A6C0|#1A1A1A|base|n
+Udinese|Italy|2004/05|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Parma|Italy|2000/01|Home|plain|#FFE500|#0B3C8C|base|n
+Frosinone|Italy|2002/03|Home|stripes|#F5D000|#14315E|base|n
+Pescara|Italy|2000/01|Home|stripes|#14315E|#87CEEB|base|n
+Brescia|Italy|2008/09|Home|plain|#0A2A5D|#FFFFFF|base|n
+Napoli|Italy|2004/05|Home|plain|#12A0D7|#FFFFFF|base|n
+Ternana|Italy|2006/07|Home|plain|#00954C|#FFFFFF|base|n
+Reggina|Italy|2002/03|Home|stripes|#7A1C3C|#0057B8|base|n
+Chievo Verona|Italy|2006/07|Home|plain|#F5C400|#0A47A1|base|n
+AC Monza|Italy|2006/07|Home|plain|#E2001A|#FFFFFF|base|n
+Empoli|Italy|2006/07|Home|plain|#00579C|#FFFFFF|base|n
+Cremonese|Italy|2008/09|Home|stripes|#C8102E|#1A1A1A|base|n
+AC Milan|Italy|2008/09|Home|stripes|#FB090B|#1A1A1A|base|n
+Hellas Verona|Italy|2000/01|Home|plain|#003C7D|#FFE500|base|n
+Fiorentina|Italy|2008/09|Home|plain|#482E92|#FFFFFF|base|n
+Atalanta|Italy|2002/03|Home|stripes|#1E71B8|#1A1A1A|base|n
+Sampdoria|Italy|2006/07|Home|chest|#1B5AAB|#FFFFFF|base|n
+Livorno|Italy|2002/03|Home|plain|#8B1A2E|#FFFFFF|base|n
+Genoa|Italy|2000/01|Home|halves|#B4162A|#14315E|over|n
+Juventus|Italy|2004/05|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Perugia|Italy|2002/03|Home|plain|#C8102E|#FFFFFF|base|n
+Como|Italy|2002/03|Home|plain|#0057B8|#FFFFFF|base|n
+Torino|Italy|2006/07|Home|plain|#881010|#FFFFFF|base|n
+Lazio|Italy|2002/03|Home|plain|#87D8F7|#FFFFFF|base|n
+Como|Italy|2008/09|Home|plain|#0057B8|#FFFFFF|base|n
+Catania|Italy|2004/05|Home|stripes|#C8102E|#14315E|base|n
+Perugia|Italy|2000/01|Home|plain|#C8102E|#FFFFFF|base|n
+Cagliari|Italy|2002/03|Home|halves|#B01E28|#14315E|over|n
+Bologna|Italy|2000/01|Home|stripes|#9F1B32|#14315E|base|n
+Pescara|Italy|2002/03|Home|stripes|#14315E|#87CEEB|base|n
+Frosinone|Italy|2006/07|Home|stripes|#F5D000|#14315E|base|n
+Bologna|Italy|2016/17|Home|stripes|#9F1B32|#14315E|base|n
+Internazionale|Italy|2014/15|Home|stripes|#0068A8|#1A1A1A|base|n
+Chievo Verona|Italy|2018/19|Home|plain|#F5C400|#0A47A1|base|n
+AS Roma|Italy|2012/13|Home|plain|#8E1F2F|#F0BC42|base|n
+Frosinone|Italy|2018/19|Home|stripes|#F5D000|#14315E|base|n
+Perugia|Italy|2018/19|Home|plain|#C8102E|#FFFFFF|base|n
+Cremonese|Italy|2014/15|Home|stripes|#C8102E|#1A1A1A|base|n
+Juventus|Italy|2018/19|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Como|Italy|2018/19|Home|plain|#0057B8|#FFFFFF|base|n
+Hellas Verona|Italy|2012/13|Home|plain|#003C7D|#FFE500|base|n
+Napoli|Italy|2018/19|Home|plain|#12A0D7|#FFFFFF|base|n
+Parma|Italy|2014/15|Home|plain|#FFE500|#0B3C8C|base|n
+AC Milan|Italy|2010/11|Home|stripes|#FB090B|#1A1A1A|base|n
+Cagliari|Italy|2018/19|Home|halves|#B01E28|#14315E|over|n
+Pescara|Italy|2012/13|Home|stripes|#14315E|#87CEEB|base|n
+Catania|Italy|2014/15|Home|stripes|#C8102E|#14315E|base|n
+Brescia|Italy|2010/11|Home|plain|#0A2A5D|#FFFFFF|base|n
+Ternana|Italy|2016/17|Home|plain|#00954C|#FFFFFF|base|n
+Palermo|Italy|2014/15|Home|plain|#F4A6C0|#1A1A1A|base|n
+Atalanta|Italy|2010/11|Home|stripes|#1E71B8|#1A1A1A|base|n
+Livorno|Italy|2010/11|Home|plain|#8B1A2E|#FFFFFF|base|n
+Fiorentina|Italy|2014/15|Home|plain|#482E92|#FFFFFF|base|n
+Salernitana|Italy|2010/11|Home|stripes|#6B1F2E|#FFFFFF|over|n
+Lecce|Italy|2018/19|Home|stripes|#F5D000|#E2001A|base|n
+Venezia|Italy|2016/17|Home|plain|#00653A|#F58220|base|n
+Sampdoria|Italy|2010/11|Home|chest|#1B5AAB|#FFFFFF|base|n
+Sassuolo|Italy|2012/13|Home|stripes|#00A752|#1A1A1A|base|n
+Udinese|Italy|2016/17|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Genoa|Italy|2018/19|Home|halves|#B4162A|#14315E|over|n
+Reggina|Italy|2010/11|Home|stripes|#7A1C3C|#0057B8|base|n
+AC Monza|Italy|2018/19|Home|plain|#E2001A|#FFFFFF|base|n
+Pisa|Italy|2016/17|Home|stripes|#14315E|#1A1A1A|base|n
+Empoli|Italy|2010/11|Home|plain|#00579C|#FFFFFF|base|n
+Torino|Italy|2010/11|Home|plain|#881010|#FFFFFF|base|n
+Lazio|Italy|2014/15|Home|plain|#87D8F7|#FFFFFF|base|n
+Hellas Verona|Italy|2016/17|Home|plain|#003C7D|#FFE500|base|n
+Bologna|Italy|2012/13|Home|stripes|#9F1B32|#14315E|base|n
+Chievo Verona|Italy|2014/15|Home|plain|#F5C400|#0A47A1|base|n
+AC Milan|Italy|2012/13|Home|stripes|#FB090B|#1A1A1A|base|n
+Livorno|Italy|2016/17|Home|plain|#8B1A2E|#FFFFFF|base|n
+Internazionale|Italy|2010/11|Home|stripes|#0068A8|#1A1A1A|base|n
+Internazionale|Italy|2016/17|Home|stripes|#0068A8|#1A1A1A|base|n
+Pisa|Italy|1995/96|Home|stripes|#14315E|#1A1A1A|base|n
+Cagliari|Italy|1995/96|Home|halves|#B01E28|#14315E|over|n
+Sampdoria|Italy|1993/94|Home|chest|#1B5AAB|#FFFFFF|base|n
+Livorno|Italy|1997/98|Home|plain|#8B1A2E|#FFFFFF|base|n
+AC Milan|Italy|1997/98|Home|stripes|#FB090B|#1A1A1A|base|n
+Juventus|Italy|1997/98|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Genoa|Italy|1997/98|Home|halves|#B4162A|#14315E|over|n
+Torino|Italy|1995/96|Home|plain|#881010|#FFFFFF|base|n
+Cremonese|Italy|1991/92|Home|stripes|#C8102E|#1A1A1A|base|n
+AS Roma|Italy|1995/96|Home|plain|#8E1F2F|#F0BC42|base|n
+Bologna|Italy|1993/94|Home|stripes|#9F1B32|#14315E|base|n
+Internazionale|Italy|1993/94|Home|stripes|#0068A8|#1A1A1A|base|n
+AC Monza|Italy|1995/96|Home|plain|#E2001A|#FFFFFF|base|n
+Perugia|Italy|1991/92|Home|plain|#C8102E|#FFFFFF|base|n
+Fiorentina|Italy|1993/94|Home|plain|#482E92|#FFFFFF|base|n
+Napoli|Italy|1997/98|Home|plain|#12A0D7|#FFFFFF|base|n
+Venezia|Italy|1997/98|Home|plain|#00653A|#F58220|base|n
+Reggina|Italy|1991/92|Home|stripes|#7A1C3C|#0057B8|base|n
+Empoli|Italy|1993/94|Home|plain|#00579C|#FFFFFF|base|n
+Hellas Verona|Italy|1995/96|Home|plain|#003C7D|#FFE500|base|n
+Salernitana|Italy|1997/98|Home|stripes|#6B1F2E|#FFFFFF|over|n
+Palermo|Italy|1997/98|Home|plain|#F4A6C0|#1A1A1A|base|n
+Pescara|Italy|1997/98|Home|stripes|#14315E|#87CEEB|base|n
+Udinese|Italy|1993/94|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Ternana|Italy|1993/94|Home|plain|#00954C|#FFFFFF|base|n
+Como|Italy|1991/92|Home|plain|#0057B8|#FFFFFF|base|n
+Lecce|Italy|1993/94|Home|stripes|#F5D000|#E2001A|base|n
+Chievo Verona|Italy|1999/2000|Home|plain|#F5C400|#0A47A1|base|n
+Sassuolo|Italy|1999/2000|Home|stripes|#00A752|#1A1A1A|base|n
+Catania|Italy|1991/92|Home|stripes|#C8102E|#14315E|base|n
+Atalanta|Italy|1995/96|Home|stripes|#1E71B8|#1A1A1A|base|n
+Brescia|Italy|1993/94|Home|plain|#0A2A5D|#FFFFFF|base|n
+Parma|Italy|1999/2000|Home|plain|#FFE500|#0B3C8C|base|n
+Lazio|Italy|1991/92|Home|plain|#87D8F7|#FFFFFF|base|n
+Pescara|Italy|1980/81|Home|stripes|#14315E|#87CEEB|base|n
+AS Roma|Italy|1984/85|Home|plain|#8E1F2F|#F0BC42|base|n
+Venezia|Italy|1982/83|Home|plain|#00653A|#F58220|base|n
+Internazionale|Italy|1984/85|Home|stripes|#0068A8|#1A1A1A|base|n
+Torino|Italy|1988/89|Home|plain|#881010|#FFFFFF|base|n
+Cremonese|Italy|1986/87|Home|stripes|#C8102E|#1A1A1A|base|n
+Salernitana|Italy|1982/83|Home|stripes|#6B1F2E|#FFFFFF|over|n
+Lazio|Italy|1988/89|Home|plain|#87D8F7|#FFFFFF|base|n
+Brescia|Italy|1986/87|Home|plain|#0A2A5D|#FFFFFF|base|n
+Como|Italy|1982/83|Home|plain|#0057B8|#FFFFFF|base|n
+Hellas Verona|Italy|1986/87|Home|plain|#003C7D|#FFE500|base|n
+AC Monza|Italy|1988/89|Home|plain|#E2001A|#FFFFFF|base|n
+Empoli|Italy|1982/83|Home|plain|#00579C|#FFFFFF|base|n
+Napoli|Italy|1984/85|Home|plain|#12A0D7|#FFFFFF|base|n
+Sampdoria|Italy|1988/89|Home|chest|#1B5AAB|#FFFFFF|base|n
+Ternana|Italy|1980/81|Home|plain|#00954C|#FFFFFF|base|n
+Reggina|Italy|1984/85|Home|stripes|#7A1C3C|#0057B8|base|n
+Catania|Italy|1986/87|Home|stripes|#C8102E|#14315E|base|n
+Lecce|Italy|1982/83|Home|stripes|#F5D000|#E2001A|base|n
+Juventus|Italy|1984/85|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Pisa|Italy|1986/87|Home|stripes|#14315E|#1A1A1A|base|n
+Perugia|Italy|1982/83|Home|plain|#C8102E|#FFFFFF|base|n
+Palermo|Italy|1980/81|Home|plain|#F4A6C0|#1A1A1A|base|n
+Livorno|Italy|1988/89|Home|plain|#8B1A2E|#FFFFFF|base|n
+Atalanta|Italy|1988/89|Home|stripes|#1E71B8|#1A1A1A|base|n
+Chievo Verona|Italy|2020/21|Home|plain|#F5C400|#0A47A1|base|n
+Napoli|Italy|2020/21|Home|plain|#12A0D7|#FFFFFF|base|n
+Frosinone|Italy|2021/22|Home|stripes|#F5D000|#14315E|base|n
+Udinese|Italy|2024/25|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Cagliari|Italy|2023/24|Home|halves|#B01E28|#14315E|over|n
+Pisa|Italy|2024/25|Home|stripes|#14315E|#1A1A1A|base|n
+Perugia|Italy|2021/22|Home|plain|#C8102E|#FFFFFF|base|n
+Palermo|Italy|2022/23|Home|plain|#F4A6C0|#1A1A1A|base|n
+Atalanta|Italy|2021/22|Home|stripes|#1E71B8|#1A1A1A|base|n
+Hellas Verona|Italy|2020/21|Home|plain|#003C7D|#FFE500|base|n
+Fiorentina|Italy|2021/22|Home|plain|#482E92|#FFFFFF|base|n
+Como|Italy|2024/25|Home|plain|#0057B8|#FFFFFF|base|n
+Catania|Italy|2022/23|Home|stripes|#C8102E|#14315E|base|n
+Torino|Italy|2022/23|Home|plain|#881010|#FFFFFF|base|n
+AS Roma|Italy|2021/22|Home|plain|#8E1F2F|#F0BC42|base|n
+Pescara|Italy|2020/21|Home|stripes|#14315E|#87CEEB|base|n
+Reggina|Italy|2024/25|Home|stripes|#7A1C3C|#0057B8|base|n
+AC Milan|Italy|2022/23|Home|stripes|#FB090B|#1A1A1A|base|n
+Juventus|Italy|2022/23|Home|stripes|#1A1A1A|#FFFFFF|over|n
+AC Milan|Italy|1977/78|Home|stripes|#FB090B|#1A1A1A|base|n
+Genoa|Italy|1973/74|Home|halves|#B4162A|#14315E|over|n
+Sampdoria|Italy|1977/78|Home|chest|#1B5AAB|#FFFFFF|base|n
+Napoli|Italy|1977/78|Home|plain|#12A0D7|#FFFFFF|base|n
+Pisa|Italy|1973/74|Home|stripes|#14315E|#1A1A1A|base|n
+Perugia|Italy|1971/72|Home|plain|#C8102E|#FFFFFF|base|n
+Juventus|Italy|1977/78|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Lazio|Italy|1975/76|Home|plain|#87D8F7|#FFFFFF|base|n
+Brescia|Italy|1963/64|Home|plain|#0A2A5D|#FFFFFF|base|n
+Napoli|Italy|1967/68|Home|plain|#12A0D7|#FFFFFF|base|n
+Livorno|Italy|1963/64|Home|plain|#8B1A2E|#FFFFFF|base|n
+Perugia|Italy|1967/68|Home|plain|#C8102E|#FFFFFF|base|n
+MSV Duisburg|Germany|2008/09|Home|plain|#005CA9|#FFFFFF|base|n
+Kaiserslautern|Germany|2002/03|Home|plain|#E4002B|#1A1A1A|base|n
+SC Freiburg|Germany|2008/09|Home|plain|#E2001A|#1A1A1A|base|n
+FC Augsburg|Germany|2006/07|Home|stripes|#BA3733|#FFFFFF|over|n
+Hansa Rostock|Germany|2008/09|Home|plain|#0057B8|#FFFFFF|base|n
+VfL Osnabruck|Germany|2004/05|Home|plain|#6A2B85|#FFFFFF|base|n
+1. FC Nurnberg|Germany|2006/07|Home|plain|#AD1732|#FFFFFF|base|n
+Eintracht Frankfurt|Germany|2002/03|Home|plain|#E1000F|#1A1A1A|base|n
+FSV Mainz 05|Germany|2004/05|Home|plain|#C3141E|#FFFFFF|base|n
+Union Berlin|Germany|2008/09|Home|plain|#EB1923|#FFFFFF|base|n
+Dynamo Dresden|Germany|2000/01|Home|plain|#FFD100|#1A1A1A|base|n
+Carl Zeiss Jena|Germany|2008/09|Home|plain|#00954C|#FFFFFF|base|n
+Karlsruher SC|Germany|2000/01|Home|plain|#005CA9|#FFFFFF|base|n
+FC St. Pauli|Germany|2004/05|Home|plain|#6B4A2F|#FFFFFF|base|n
+Arminia Bielefeld|Germany|2006/07|Home|plain|#00529F|#FFFFFF|base|n
+VfL Wolfsburg|Germany|2000/01|Home|plain|#65B32E|#FFFFFF|base|n
+Werder Bremen|Germany|2004/05|Home|plain|#1D9053|#FFFFFF|base|n
+Bayern Munich|Germany|2008/09|Home|plain|#DC052D|#FFFFFF|base|n
+SV Darmstadt 98|Germany|2002/03|Home|plain|#005CA9|#FFFFFF|base|n
+TSG Hoffenheim|Germany|2006/07|Home|plain|#1961B5|#FFFFFF|base|n
+Heidenheim|Germany|2002/03|Home|plain|#E4002B|#14315E|base|n
+Schalke 04|Germany|2006/07|Home|plain|#004D9D|#FFFFFF|base|n
+VfL Bochum|Germany|2006/07|Home|plain|#005CA9|#FFFFFF|base|n
+SC Paderborn|Germany|2004/05|Home|plain|#005CA9|#FFFFFF|base|n
+Bayer Leverkusen|Germany|2008/09|Home|plain|#E32221|#1A1A1A|base|n
+Hertha BSC|Germany|2002/03|Home|plain|#005CA9|#FFFFFF|base|n
+Holstein Kiel|Germany|2004/05|Home|plain|#005CA9|#FFFFFF|base|n
+Greuther Furth|Germany|2000/01|Home|plain|#00954C|#FFFFFF|base|n
+Energie Cottbus|Germany|2004/05|Home|plain|#E4002B|#1A1A1A|base|n
+Eintracht Braunschweig|Germany|2008/09|Home|plain|#F5D000|#14315E|base|n
+Hannover 96|Germany|2008/09|Home|plain|#E30613|#1A1A1A|base|n
+Fortuna Dusseldorf|Germany|2008/09|Home|plain|#E4002B|#FFFFFF|base|n
+Borussia Dortmund|Germany|2000/01|Home|plain|#FDE100|#1A1A1A|base|n
+Hamburger SV|Germany|2004/05|Home|chest|#E30613|#FFFFFF|over|n
+Kaiserslautern|Germany|2006/07|Home|plain|#E4002B|#1A1A1A|base|n
+SC Freiburg|Germany|2000/01|Home|plain|#E2001A|#1A1A1A|base|n
+Eintracht Frankfurt|Germany|2008/09|Home|plain|#E1000F|#1A1A1A|base|n
+1. FC Nurnberg|Germany|2000/01|Home|plain|#AD1732|#FFFFFF|base|n
+Kaiserslautern|Germany|2008/09|Home|plain|#E4002B|#1A1A1A|base|n
+VfL Wolfsburg|Germany|2002/03|Home|plain|#65B32E|#FFFFFF|base|n
+FSV Mainz 05|Germany|2006/07|Home|plain|#C3141E|#FFFFFF|base|n
+VfL Osnabruck|Germany|2002/03|Home|plain|#6A2B85|#FFFFFF|base|n
+FC Augsburg|Germany|2008/09|Home|stripes|#BA3733|#FFFFFF|over|n
+Arminia Bielefeld|Germany|2000/01|Home|plain|#00529F|#FFFFFF|base|n
+VfL Osnabruck|Germany|2006/07|Home|plain|#6A2B85|#FFFFFF|base|n
+Hansa Rostock|Germany|2004/05|Home|plain|#0057B8|#FFFFFF|base|n
+TSG Hoffenheim|Germany|2000/01|Home|plain|#1961B5|#FFFFFF|base|n
+TSG Hoffenheim|Germany|2018/19|Home|plain|#1961B5|#FFFFFF|base|n
+Fortuna Dusseldorf|Germany|2012/13|Home|plain|#E4002B|#FFFFFF|base|n
+Eintracht Frankfurt|Germany|2016/17|Home|plain|#E1000F|#1A1A1A|base|n
+Energie Cottbus|Germany|2018/19|Home|plain|#E4002B|#1A1A1A|base|n
+Bayer Leverkusen|Germany|2016/17|Home|plain|#E32221|#1A1A1A|base|n
+MSV Duisburg|Germany|2014/15|Home|plain|#005CA9|#FFFFFF|base|n
+VfL Osnabruck|Germany|2018/19|Home|plain|#6A2B85|#FFFFFF|base|n
+Hannover 96|Germany|2016/17|Home|plain|#E30613|#1A1A1A|base|n
+FC Augsburg|Germany|2012/13|Home|stripes|#BA3733|#FFFFFF|over|n
+Heidenheim|Germany|2016/17|Home|plain|#E4002B|#14315E|base|n
+Borussia Dortmund|Germany|2014/15|Home|plain|#FDE100|#1A1A1A|base|n
+SC Freiburg|Germany|2016/17|Home|plain|#E2001A|#1A1A1A|base|n
+Karlsruher SC|Germany|2012/13|Home|plain|#005CA9|#FFFFFF|base|n
+SV Darmstadt 98|Germany|2012/13|Home|plain|#005CA9|#FFFFFF|base|n
+Hamburger SV|Germany|2018/19|Home|chest|#E30613|#FFFFFF|over|n
+Eintracht Braunschweig|Germany|2012/13|Home|plain|#F5D000|#14315E|base|n
+Hansa Rostock|Germany|2012/13|Home|plain|#0057B8|#FFFFFF|base|n
+Carl Zeiss Jena|Germany|2012/13|Home|plain|#00954C|#FFFFFF|base|n
+Kaiserslautern|Germany|2016/17|Home|plain|#E4002B|#1A1A1A|base|n
+Union Berlin|Germany|2010/11|Home|plain|#EB1923|#FFFFFF|base|n
+Holstein Kiel|Germany|2018/19|Home|plain|#005CA9|#FFFFFF|base|n
+Arminia Bielefeld|Germany|2014/15|Home|plain|#00529F|#FFFFFF|base|n
+VfL Wolfsburg|Germany|2016/17|Home|plain|#65B32E|#FFFFFF|base|n
+VfL Bochum|Germany|2016/17|Home|plain|#005CA9|#FFFFFF|base|n
+Bayern Munich|Germany|2010/11|Home|plain|#DC052D|#FFFFFF|base|n
+Dynamo Dresden|Germany|2012/13|Home|plain|#FFD100|#1A1A1A|base|n
+SC Paderborn|Germany|2012/13|Home|plain|#005CA9|#FFFFFF|base|n
+FC St. Pauli|Germany|2010/11|Home|plain|#6B4A2F|#FFFFFF|base|n
+Werder Bremen|Germany|2010/11|Home|plain|#1D9053|#FFFFFF|base|n
+1. FC Nurnberg|Germany|2014/15|Home|plain|#AD1732|#FFFFFF|base|n
+Hertha BSC|Germany|2016/17|Home|plain|#005CA9|#FFFFFF|base|n
+Schalke 04|Germany|2014/15|Home|plain|#004D9D|#FFFFFF|base|n
+Greuther Furth|Germany|2016/17|Home|plain|#00954C|#FFFFFF|base|n
+FSV Mainz 05|Germany|2012/13|Home|plain|#C3141E|#FFFFFF|base|n
+Energie Cottbus|Germany|2016/17|Home|plain|#E4002B|#1A1A1A|base|n
+FC Augsburg|Germany|2010/11|Home|stripes|#BA3733|#FFFFFF|over|n
+Hannover 96|Germany|2010/11|Home|plain|#E30613|#1A1A1A|base|n
+Hannover 96|Germany|2014/15|Home|plain|#E30613|#1A1A1A|base|n
+SV Darmstadt 98|Germany|2014/15|Home|plain|#005CA9|#FFFFFF|base|n
+Carl Zeiss Jena|Germany|2010/11|Home|plain|#00954C|#FFFFFF|base|n
+SV Darmstadt 98|Germany|2010/11|Home|plain|#005CA9|#FFFFFF|base|n
+Borussia Dortmund|Germany|2018/19|Home|plain|#FDE100|#1A1A1A|base|n
+Hansa Rostock|Germany|2014/15|Home|plain|#0057B8|#FFFFFF|base|n
+Hannover 96|Germany|1991/92|Home|plain|#E30613|#1A1A1A|base|n
+VfL Wolfsburg|Germany|1991/92|Home|plain|#65B32E|#FFFFFF|base|n
+Holstein Kiel|Germany|1995/96|Home|plain|#005CA9|#FFFFFF|base|n
+Bayer Leverkusen|Germany|1991/92|Home|plain|#E32221|#1A1A1A|base|n
+Carl Zeiss Jena|Germany|1991/92|Home|plain|#00954C|#FFFFFF|base|n
+Werder Bremen|Germany|1993/94|Home|plain|#1D9053|#FFFFFF|base|n
+Karlsruher SC|Germany|1999/2000|Home|plain|#005CA9|#FFFFFF|base|n
+Hansa Rostock|Germany|1991/92|Home|plain|#0057B8|#FFFFFF|base|n
+Schalke 04|Germany|1993/94|Home|plain|#004D9D|#FFFFFF|base|n
+Arminia Bielefeld|Germany|1993/94|Home|plain|#00529F|#FFFFFF|base|n
+Eintracht Frankfurt|Germany|1993/94|Home|plain|#E1000F|#1A1A1A|base|n
+Union Berlin|Germany|1991/92|Home|plain|#EB1923|#FFFFFF|base|n
+Fortuna Dusseldorf|Germany|1997/98|Home|plain|#E4002B|#FFFFFF|base|n
+MSV Duisburg|Germany|1997/98|Home|plain|#005CA9|#FFFFFF|base|n
+Hamburger SV|Germany|1995/96|Home|chest|#E30613|#FFFFFF|over|n
+Dynamo Dresden|Germany|1993/94|Home|plain|#FFD100|#1A1A1A|base|n
+SC Freiburg|Germany|1997/98|Home|plain|#E2001A|#1A1A1A|base|n
+VfL Bochum|Germany|1995/96|Home|plain|#005CA9|#FFFFFF|base|n
+Borussia Dortmund|Germany|1991/92|Home|plain|#FDE100|#1A1A1A|base|n
+FC St. Pauli|Germany|1993/94|Home|plain|#6B4A2F|#FFFFFF|base|n
+Eintracht Braunschweig|Germany|1991/92|Home|plain|#F5D000|#14315E|base|n
+Greuther Furth|Germany|1997/98|Home|plain|#00954C|#FFFFFF|base|n
+Kaiserslautern|Germany|1997/98|Home|plain|#E4002B|#1A1A1A|base|n
+Energie Cottbus|Germany|1999/2000|Home|plain|#E4002B|#1A1A1A|base|n
+VfL Osnabruck|Germany|1993/94|Home|plain|#6A2B85|#FFFFFF|base|n
+FC Augsburg|Germany|1993/94|Home|stripes|#BA3733|#FFFFFF|over|n
+1. FC Nurnberg|Germany|1995/96|Home|plain|#AD1732|#FFFFFF|base|n
+SC Paderborn|Germany|1999/2000|Home|plain|#005CA9|#FFFFFF|base|n
+FSV Mainz 05|Germany|1999/2000|Home|plain|#C3141E|#FFFFFF|base|n
+SV Darmstadt 98|Germany|1995/96|Home|plain|#005CA9|#FFFFFF|base|n
+Bayern Munich|Germany|1993/94|Home|plain|#DC052D|#FFFFFF|base|n
+Hertha BSC|Germany|1991/92|Home|plain|#005CA9|#FFFFFF|base|n
+Hansa Rostock|Germany|1997/98|Home|plain|#0057B8|#FFFFFF|base|n
+Carl Zeiss Jena|Germany|1999/2000|Home|plain|#00954C|#FFFFFF|base|n
+Hannover 96|Germany|1986/87|Home|plain|#E30613|#1A1A1A|base|n
+Schalke 04|Germany|1982/83|Home|plain|#004D9D|#FFFFFF|base|n
+VfL Bochum|Germany|1984/85|Home|plain|#005CA9|#FFFFFF|base|n
+Holstein Kiel|Germany|1980/81|Home|plain|#005CA9|#FFFFFF|base|n
+FSV Mainz 05|Germany|1982/83|Home|plain|#C3141E|#FFFFFF|base|n
+Hertha BSC|Germany|1982/83|Home|plain|#005CA9|#FFFFFF|base|n
+1. FC Nurnberg|Germany|1984/85|Home|plain|#AD1732|#FFFFFF|base|n
+Hansa Rostock|Germany|1988/89|Home|plain|#0057B8|#FFFFFF|base|n
+Greuther Furth|Germany|1988/89|Home|plain|#00954C|#FFFFFF|base|n
+SC Freiburg|Germany|1988/89|Home|plain|#E2001A|#1A1A1A|base|n
+Arminia Bielefeld|Germany|1980/81|Home|plain|#00529F|#FFFFFF|base|n
+FC St. Pauli|Germany|1982/83|Home|plain|#6B4A2F|#FFFFFF|base|n
+VfL Osnabruck|Germany|1984/85|Home|plain|#6A2B85|#FFFFFF|base|n
+Bayer Leverkusen|Germany|1982/83|Home|plain|#E32221|#1A1A1A|base|n
+Karlsruher SC|Germany|1984/85|Home|plain|#005CA9|#FFFFFF|base|n
+SV Darmstadt 98|Germany|1984/85|Home|plain|#005CA9|#FFFFFF|base|n
+Eintracht Frankfurt|Germany|1982/83|Home|plain|#E1000F|#1A1A1A|base|n
+Kaiserslautern|Germany|1982/83|Home|plain|#E4002B|#1A1A1A|base|n
+Werder Bremen|Germany|1982/83|Home|plain|#1D9053|#FFFFFF|base|n
+Bayern Munich|Germany|1984/85|Home|plain|#DC052D|#FFFFFF|base|n
+Eintracht Braunschweig|Germany|1986/87|Home|plain|#F5D000|#14315E|base|n
+Hamburger SV|Germany|1980/81|Home|chest|#E30613|#FFFFFF|over|n
+Carl Zeiss Jena|Germany|1986/87|Home|plain|#00954C|#FFFFFF|base|n
+MSV Duisburg|Germany|1982/83|Home|plain|#005CA9|#FFFFFF|base|n
+Dynamo Dresden|Germany|1988/89|Home|plain|#FFD100|#1A1A1A|base|n
+FC Augsburg|Germany|1982/83|Home|stripes|#BA3733|#FFFFFF|over|n
+VfL Bochum|Germany|2024/25|Home|plain|#005CA9|#FFFFFF|base|n
+TSG Hoffenheim|Germany|2023/24|Home|plain|#1961B5|#FFFFFF|base|n
+Energie Cottbus|Germany|2024/25|Home|plain|#E4002B|#1A1A1A|base|n
+1. FC Nurnberg|Germany|2022/23|Home|plain|#AD1732|#FFFFFF|base|n
+Werder Bremen|Germany|2021/22|Home|plain|#1D9053|#FFFFFF|base|n
+Carl Zeiss Jena|Germany|2020/21|Home|plain|#00954C|#FFFFFF|base|n
+Eintracht Braunschweig|Germany|2022/23|Home|plain|#F5D000|#14315E|base|n
+Hertha BSC|Germany|2023/24|Home|plain|#005CA9|#FFFFFF|base|n
+VfL Wolfsburg|Germany|2020/21|Home|plain|#65B32E|#FFFFFF|base|n
+FSV Mainz 05|Germany|2022/23|Home|plain|#C3141E|#FFFFFF|base|n
+Fortuna Dusseldorf|Germany|2022/23|Home|plain|#E4002B|#FFFFFF|base|n
+SC Freiburg|Germany|2024/25|Home|plain|#E2001A|#1A1A1A|base|n
+Eintracht Frankfurt|Germany|2024/25|Home|plain|#E1000F|#1A1A1A|base|n
+Greuther Furth|Germany|2023/24|Home|plain|#00954C|#FFFFFF|base|n
+Borussia Dortmund|Germany|2023/24|Home|plain|#FDE100|#1A1A1A|base|n
+FC Augsburg|Germany|2023/24|Home|stripes|#BA3733|#FFFFFF|over|n
+VfL Osnabruck|Germany|2024/25|Home|plain|#6A2B85|#FFFFFF|base|n
+Holstein Kiel|Germany|2024/25|Home|plain|#005CA9|#FFFFFF|base|n
+Schalke 04|Germany|2022/23|Home|plain|#004D9D|#FFFFFF|base|n
+VfL Bochum|Germany|1975/76|Home|plain|#005CA9|#FFFFFF|base|n
+Fortuna Dusseldorf|Germany|1975/76|Home|plain|#E4002B|#FFFFFF|base|n
+Eintracht Frankfurt|Germany|1971/72|Home|plain|#E1000F|#1A1A1A|base|n
+SV Darmstadt 98|Germany|1975/76|Home|plain|#005CA9|#FFFFFF|base|n
+Hannover 96|Germany|1979/80|Home|plain|#E30613|#1A1A1A|base|n
+Schalke 04|Germany|1977/78|Home|plain|#004D9D|#FFFFFF|base|n
+Hansa Rostock|Germany|1977/78|Home|plain|#0057B8|#FFFFFF|base|n
+FC Augsburg|Germany|1979/80|Home|stripes|#BA3733|#FFFFFF|over|n
+VfL Osnabruck|Germany|1977/78|Home|plain|#6A2B85|#FFFFFF|base|n
+VfL Osnabruck|Germany|1969/70|Home|plain|#6A2B85|#FFFFFF|base|n
+Werder Bremen|Germany|1967/68|Home|plain|#1D9053|#FFFFFF|base|n
+Kaiserslautern|Germany|1969/70|Home|plain|#E4002B|#1A1A1A|base|n
+Carl Zeiss Jena|Germany|1969/70|Home|plain|#00954C|#FFFFFF|base|n
+RC Strasbourg|France|2008/09|Home|plain|#0057B8|#FFFFFF|base|n
+AS Nancy|France|2000/01|Home|plain|#C8102E|#FFFFFF|base|n
+Paris Saint-Germain|France|2008/09|Home|band|#E30613|#004170|over|n
+ESTAC Troyes|France|2008/09|Home|plain|#0057B8|#FFFFFF|base|n
+Dijon FCO|France|2006/07|Home|plain|#C8102E|#FFFFFF|base|n
+RC Lens|France|2000/01|Home|stripes|#FFE400|#B8102E|base|n
+CS Sedan|France|2002/03|Home|plain|#E4002B|#1A1A1A|base|n
+Le Mans FC|France|2004/05|Home|plain|#E4002B|#FFFFFF|base|n
+Valenciennes|France|2002/03|Home|plain|#E4002B|#FFFFFF|base|n
+EA Guingamp|France|2008/09|Home|plain|#E4002B|#1A1A1A|base|n
+OGC Nice|France|2004/05|Home|plain|#C8102E|#1A1A1A|base|n
+Toulouse|France|2002/03|Home|plain|#6A2B85|#FFFFFF|base|n
+AS Monaco|France|2006/07|Home|halves|#E63329|#FFFFFF|over|n
+Stade Brestois|France|2004/05|Home|plain|#C8102E|#FFFFFF|base|n
+Stade Rennais|France|2008/09|Home|halves|#E4002B|#1A1A1A|over|n
+SC Bastia|France|2006/07|Home|plain|#0057B8|#FFFFFF|base|n
+Sochaux|France|2000/01|Home|plain|#FFD100|#14315E|base|n
+Montpellier|France|2008/09|Home|halves|#F58220|#14315E|over|n
+FC Metz|France|2004/05|Home|plain|#7A1C3C|#FFFFFF|base|n
+FC Lorient|France|2004/05|Home|plain|#F58220|#1A1A1A|base|n
+SM Caen|France|2006/07|Home|plain|#0057B8|#E4002B|base|n
+AC Ajaccio|France|2008/09|Home|plain|#C8102E|#FFFFFF|base|n
+Stade de Reims|France|2002/03|Home|plain|#E4002B|#FFFFFF|base|n
+Saint-Etienne|France|2004/05|Home|plain|#0A6B3C|#FFFFFF|base|n
+Lille|France|2008/09|Home|plain|#E01E13|#14315E|base|n
+Amiens SC|France|2008/09|Home|plain|#14315E|#FFFFFF|base|n
+Nimes Olympique|France|2004/05|Home|plain|#C8102E|#FFFFFF|base|n
+Bordeaux|France|2004/05|Home|plain|#00214E|#FFFFFF|base|n
+Grenoble Foot|France|2002/03|Home|plain|#0057B8|#FFFFFF|base|n
+Clermont Foot|France|2000/01|Home|plain|#C8102E|#14315E|base|n
+Le Havre|France|2006/07|Home|stripes|#87CEEB|#14315E|base|n
+Nantes|France|2004/05|Home|plain|#FFD200|#008D36|base|n
+Dijon FCO|France|2004/05|Home|plain|#C8102E|#FFFFFF|base|n
+RC Strasbourg|France|2000/01|Home|plain|#0057B8|#FFFFFF|base|n
+OGC Nice|France|2008/09|Home|plain|#C8102E|#1A1A1A|base|n
+Le Mans FC|France|2000/01|Home|plain|#E4002B|#FFFFFF|base|n
+AS Nancy|France|2006/07|Home|plain|#C8102E|#FFFFFF|base|n
+CS Sedan|France|2000/01|Home|plain|#E4002B|#1A1A1A|base|n
+AS Monaco|France|2004/05|Home|halves|#E63329|#FFFFFF|over|n
+Paris Saint-Germain|France|2006/07|Home|band|#E30613|#004170|over|n
+SM Caen|France|2008/09|Home|plain|#0057B8|#E4002B|base|n
+Stade Brestois|France|2000/01|Home|plain|#C8102E|#FFFFFF|base|n
+AS Monaco|France|2002/03|Home|halves|#E63329|#FFFFFF|over|n
+Dijon FCO|France|2002/03|Home|plain|#C8102E|#FFFFFF|base|n
+SC Bastia|France|2000/01|Home|plain|#0057B8|#FFFFFF|base|n
+Paris Saint-Germain|France|2000/01|Home|band|#E30613|#004170|over|n
+Stade Rennais|France|2002/03|Home|halves|#E4002B|#1A1A1A|over|n
+AS Nancy|France|2002/03|Home|plain|#C8102E|#FFFFFF|base|n
+Sochaux|France|2010/11|Home|plain|#FFD100|#14315E|base|n
+Nimes Olympique|France|2012/13|Home|plain|#C8102E|#FFFFFF|base|n
+AS Nancy|France|2018/19|Home|plain|#C8102E|#FFFFFF|base|n
+AC Ajaccio|France|2012/13|Home|plain|#C8102E|#FFFFFF|base|n
+EA Guingamp|France|2010/11|Home|plain|#E4002B|#1A1A1A|base|n
+Toulouse|France|2014/15|Home|plain|#6A2B85|#FFFFFF|base|n
+Grenoble Foot|France|2012/13|Home|plain|#0057B8|#FFFFFF|base|n
+Stade de Reims|France|2014/15|Home|plain|#E4002B|#FFFFFF|base|n
+Stade Brestois|France|2016/17|Home|plain|#C8102E|#FFFFFF|base|n
+RC Strasbourg|France|2014/15|Home|plain|#0057B8|#FFFFFF|base|n
+CS Sedan|France|2012/13|Home|plain|#E4002B|#1A1A1A|base|n
+AS Monaco|France|2018/19|Home|halves|#E63329|#FFFFFF|over|n
+Amiens SC|France|2012/13|Home|plain|#14315E|#FFFFFF|base|n
+RC Lens|France|2014/15|Home|stripes|#FFE400|#B8102E|base|n
+Stade Rennais|France|2012/13|Home|halves|#E4002B|#1A1A1A|over|n
+SM Caen|France|2010/11|Home|plain|#0057B8|#E4002B|base|n
+Lille|France|2018/19|Home|plain|#E01E13|#14315E|base|n
+SC Bastia|France|2014/15|Home|plain|#0057B8|#FFFFFF|base|n
+FC Lorient|France|2018/19|Home|plain|#F58220|#1A1A1A|base|n
+Nantes|France|2010/11|Home|plain|#FFD200|#008D36|base|n
+FC Metz|France|2014/15|Home|plain|#7A1C3C|#FFFFFF|base|n
+Valenciennes|France|2014/15|Home|plain|#E4002B|#FFFFFF|base|n
+Bordeaux|France|2018/19|Home|plain|#00214E|#FFFFFF|base|n
+Montpellier|France|2014/15|Home|halves|#F58220|#14315E|over|n
+Clermont Foot|France|2018/19|Home|plain|#C8102E|#14315E|base|n
+Paris Saint-Germain|France|2010/11|Home|band|#E30613|#004170|over|n
+OGC Nice|France|2018/19|Home|plain|#C8102E|#1A1A1A|base|n
+Dijon FCO|France|2018/19|Home|plain|#C8102E|#FFFFFF|base|n
+Le Havre|France|2014/15|Home|stripes|#87CEEB|#14315E|base|n
+ESTAC Troyes|France|2016/17|Home|plain|#0057B8|#FFFFFF|base|n
+Saint-Etienne|France|2014/15|Home|plain|#0A6B3C|#FFFFFF|base|n
+Le Mans FC|France|2014/15|Home|plain|#E4002B|#FFFFFF|base|n
+AS Nancy|France|2012/13|Home|plain|#C8102E|#FFFFFF|base|n
+Grenoble Foot|France|2010/11|Home|plain|#0057B8|#FFFFFF|base|n
+Toulouse|France|2016/17|Home|plain|#6A2B85|#FFFFFF|base|n
+Sochaux|France|2016/17|Home|plain|#FFD100|#14315E|base|n
+Stade de Reims|France|2018/19|Home|plain|#E4002B|#FFFFFF|base|n
+RC Strasbourg|France|2012/13|Home|plain|#0057B8|#FFFFFF|base|n
+Stade Brestois|France|2018/19|Home|plain|#C8102E|#FFFFFF|base|n
+AS Monaco|France|2012/13|Home|halves|#E63329|#FFFFFF|over|n
+Nimes Olympique|France|2014/15|Home|plain|#C8102E|#FFFFFF|base|n
+Stade Brestois|France|2010/11|Home|plain|#C8102E|#FFFFFF|base|n
+RC Strasbourg|France|2010/11|Home|plain|#0057B8|#FFFFFF|base|n
+Stade Rennais|France|2010/11|Home|halves|#E4002B|#1A1A1A|over|n
+Le Havre|France|1995/96|Home|stripes|#87CEEB|#14315E|base|n
+FC Lorient|France|1999/2000|Home|plain|#F58220|#1A1A1A|base|n
+RC Lens|France|1993/94|Home|stripes|#FFE400|#B8102E|base|n
+Le Mans FC|France|1995/96|Home|plain|#E4002B|#FFFFFF|base|n
+Stade Brestois|France|1993/94|Home|plain|#C8102E|#FFFFFF|base|n
+RC Strasbourg|France|1997/98|Home|plain|#0057B8|#FFFFFF|base|n
+Nantes|France|1997/98|Home|plain|#FFD200|#008D36|base|n
+AC Ajaccio|France|1999/2000|Home|plain|#C8102E|#FFFFFF|base|n
+Stade Rennais|France|1997/98|Home|halves|#E4002B|#1A1A1A|over|n
+OGC Nice|France|1991/92|Home|plain|#C8102E|#1A1A1A|base|n
+Valenciennes|France|1997/98|Home|plain|#E4002B|#FFFFFF|base|n
+AS Nancy|France|1997/98|Home|plain|#C8102E|#FFFFFF|base|n
+Paris Saint-Germain|France|1991/92|Home|band|#E30613|#004170|over|n
+SC Bastia|France|1999/2000|Home|plain|#0057B8|#FFFFFF|base|n
+Clermont Foot|France|1993/94|Home|plain|#C8102E|#14315E|base|n
+Montpellier|France|1999/2000|Home|halves|#F58220|#14315E|over|n
+Toulouse|France|1997/98|Home|plain|#6A2B85|#FFFFFF|base|n
+AS Monaco|France|1999/2000|Home|halves|#E63329|#FFFFFF|over|n
+Bordeaux|France|1991/92|Home|plain|#00214E|#FFFFFF|base|n
+CS Sedan|France|1999/2000|Home|plain|#E4002B|#1A1A1A|base|n
+Sochaux|France|1995/96|Home|plain|#FFD100|#14315E|base|n
+Saint-Etienne|France|1995/96|Home|plain|#0A6B3C|#FFFFFF|base|n
+Dijon FCO|France|1999/2000|Home|plain|#C8102E|#FFFFFF|base|n
+EA Guingamp|France|1995/96|Home|plain|#E4002B|#1A1A1A|base|n
+Grenoble Foot|France|1997/98|Home|plain|#0057B8|#FFFFFF|base|n
+Amiens SC|France|1991/92|Home|plain|#14315E|#FFFFFF|base|n
+Nimes Olympique|France|1997/98|Home|plain|#C8102E|#FFFFFF|base|n
+SM Caen|France|1997/98|Home|plain|#0057B8|#E4002B|base|n
+Lille|France|1991/92|Home|plain|#E01E13|#14315E|base|n
+FC Metz|France|1991/92|Home|plain|#7A1C3C|#FFFFFF|base|n
+ESTAC Troyes|France|1997/98|Home|plain|#0057B8|#FFFFFF|base|n
+Stade de Reims|France|1991/92|Home|plain|#E4002B|#FFFFFF|base|n
+Le Mans FC|France|1993/94|Home|plain|#E4002B|#FFFFFF|base|n
+Nantes|France|1993/94|Home|plain|#FFD200|#008D36|base|n
+Le Havre|France|1997/98|Home|stripes|#87CEEB|#14315E|base|n
+RC Strasbourg|France|1986/87|Home|plain|#0057B8|#FFFFFF|base|n
+Stade de Reims|France|1986/87|Home|plain|#E4002B|#FFFFFF|base|n
+Saint-Etienne|France|1980/81|Home|plain|#0A6B3C|#FFFFFF|base|n
+AS Nancy|France|1986/87|Home|plain|#C8102E|#FFFFFF|base|n
+Valenciennes|France|1980/81|Home|plain|#E4002B|#FFFFFF|base|n
+Paris Saint-Germain|France|1980/81|Home|band|#E30613|#004170|over|n
+Toulouse|France|1982/83|Home|plain|#6A2B85|#FFFFFF|base|n
+AC Ajaccio|France|1982/83|Home|plain|#C8102E|#FFFFFF|base|n
+Le Havre|France|1986/87|Home|stripes|#87CEEB|#14315E|base|n
+AS Monaco|France|1984/85|Home|halves|#E63329|#FFFFFF|over|n
+EA Guingamp|France|1988/89|Home|plain|#E4002B|#1A1A1A|base|n
+CS Sedan|France|1988/89|Home|plain|#E4002B|#1A1A1A|base|n
+Sochaux|France|1980/81|Home|plain|#FFD100|#14315E|base|n
+Montpellier|France|1980/81|Home|halves|#F58220|#14315E|over|n
+Le Mans FC|France|1988/89|Home|plain|#E4002B|#FFFFFF|base|n
+FC Lorient|France|1982/83|Home|plain|#F58220|#1A1A1A|base|n
+Grenoble Foot|France|1982/83|Home|plain|#0057B8|#FFFFFF|base|n
+Stade Rennais|France|1986/87|Home|halves|#E4002B|#1A1A1A|over|n
+Bordeaux|France|1988/89|Home|plain|#00214E|#FFFFFF|base|n
+OGC Nice|France|1988/89|Home|plain|#C8102E|#1A1A1A|base|n
+SC Bastia|France|1984/85|Home|plain|#0057B8|#FFFFFF|base|n
+Nimes Olympique|France|1982/83|Home|plain|#C8102E|#FFFFFF|base|n
+FC Metz|France|1980/81|Home|plain|#7A1C3C|#FFFFFF|base|n
+Lille|France|1988/89|Home|plain|#E01E13|#14315E|base|n
+ESTAC Troyes|France|1986/87|Home|plain|#0057B8|#FFFFFF|base|n
+SM Caen|France|1980/81|Home|plain|#0057B8|#E4002B|base|n
+Dijon FCO|France|2023/24|Home|plain|#C8102E|#FFFFFF|base|n
+CS Sedan|France|2020/21|Home|plain|#E4002B|#1A1A1A|base|n
+Valenciennes|France|2023/24|Home|plain|#E4002B|#FFFFFF|base|n
+SM Caen|France|2022/23|Home|plain|#0057B8|#E4002B|base|n
+Sochaux|France|2024/25|Home|plain|#FFD100|#14315E|base|n
+AS Monaco|France|2022/23|Home|halves|#E63329|#FFFFFF|over|n
+Stade Rennais|France|2020/21|Home|halves|#E4002B|#1A1A1A|over|n
+Grenoble Foot|France|2021/22|Home|plain|#0057B8|#FFFFFF|base|n
+EA Guingamp|France|2020/21|Home|plain|#E4002B|#1A1A1A|base|n
+Clermont Foot|France|2023/24|Home|plain|#C8102E|#14315E|base|n
+Toulouse|France|2024/25|Home|plain|#6A2B85|#FFFFFF|base|n
+Lille|France|2020/21|Home|plain|#E01E13|#14315E|base|n
+FC Lorient|France|2024/25|Home|plain|#F58220|#1A1A1A|base|n
+RC Lens|France|2023/24|Home|stripes|#FFE400|#B8102E|base|n
+AC Ajaccio|France|2021/22|Home|plain|#C8102E|#FFFFFF|base|n
+Stade Brestois|France|2021/22|Home|plain|#C8102E|#FFFFFF|base|n
+AS Nancy|France|2020/21|Home|plain|#C8102E|#FFFFFF|base|n
+Bordeaux|France|2023/24|Home|plain|#00214E|#FFFFFF|base|n
+Paris Saint-Germain|France|2023/24|Home|band|#E30613|#004170|over|n
+Le Havre|France|2020/21|Home|stripes|#87CEEB|#14315E|base|n
+Saint-Etienne|France|1971/72|Home|plain|#0A6B3C|#FFFFFF|base|n
+Valenciennes|France|1971/72|Home|plain|#E4002B|#FFFFFF|base|n
+Paris Saint-Germain|France|1977/78|Home|band|#E30613|#004170|over|n
+Toulouse|France|1977/78|Home|plain|#6A2B85|#FFFFFF|base|n
+Bordeaux|France|1979/80|Home|plain|#00214E|#FFFFFF|base|n
+Le Mans FC|France|1975/76|Home|plain|#E4002B|#FFFFFF|base|n
+Montpellier|France|1975/76|Home|halves|#F58220|#14315E|over|n
+Nimes Olympique|France|1971/72|Home|plain|#C8102E|#FFFFFF|base|n
+SM Caen|France|1971/72|Home|plain|#0057B8|#E4002B|base|n
+AS Monaco|France|1969/70|Home|halves|#E63329|#FFFFFF|over|n
+Valenciennes|France|1967/68|Home|plain|#E4002B|#FFFFFF|base|n
+RC Lens|France|1963/64|Home|stripes|#FFE400|#B8102E|base|n
+Lille|France|1967/68|Home|plain|#E01E13|#14315E|base|n
+Hamilton Academical|Scotland|2002/03|Home|stripes|#C8102E|#FFFFFF|over|n
+Dundee|Scotland|2000/01|Home|plain|#14315E|#FFFFFF|base|n
+Kilmarnock|Scotland|2008/09|Home|stripes|#14315E|#FFFFFF|over|n
+St Mirren|Scotland|2002/03|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Partick Thistle|Scotland|2006/07|Home|plain|#FFD100|#E4002B|base|n
+Greenock Morton|Scotland|2002/03|Home|hoops|#14315E|#FFFFFF|over|n
+Motherwell|Scotland|2000/01|Home|plain|#FFB81C|#7A1732|base|n
+Ross County|Scotland|2004/05|Home|plain|#005CA9|#FFFFFF|base|n
+Livingston|Scotland|2008/09|Home|plain|#FFD100|#1A1A1A|base|n
+Dundee United|Scotland|2002/03|Home|plain|#FF7000|#1A1A1A|base|n
+St Johnstone|Scotland|2000/01|Home|plain|#0057B8|#FFFFFF|base|n
+Hibernian|Scotland|2000/01|Home|plain|#005E36|#FFFFFF|base|n
+Arbroath|Scotland|2008/09|Home|plain|#7A1C3C|#FFFFFF|base|n
+Falkirk|Scotland|2002/03|Home|plain|#14315E|#FFFFFF|base|n
+Inverness Caledonian Thistle|Scotland|2008/09|Home|plain|#0057B8|#E4002B|base|n
+Dunfermline Athletic|Scotland|2000/01|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Heart of Midlothian|Scotland|2002/03|Home|plain|#7A1732|#FFFFFF|base|n
+Queen of the South|Scotland|2006/07|Home|plain|#14315E|#FFFFFF|base|n
+Stirling Albion|Scotland|2002/03|Home|plain|#E4002B|#FFFFFF|base|n
+Aberdeen|Scotland|2002/03|Home|plain|#E2001A|#FFFFFF|base|n
+Raith Rovers|Scotland|2004/05|Home|plain|#14315E|#FFFFFF|base|n
+Rangers|Scotland|2000/01|Home|plain|#1B458F|#FFFFFF|base|n
+Celtic|Scotland|2004/05|Home|hoops|#018749|#FFFFFF|over|n
+Motherwell|Scotland|2012/13|Home|plain|#FFB81C|#7A1732|base|n
+Dundee United|Scotland|2018/19|Home|plain|#FF7000|#1A1A1A|base|n
+St Mirren|Scotland|2018/19|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Falkirk|Scotland|2012/13|Home|plain|#14315E|#FFFFFF|base|n
+Ross County|Scotland|2012/13|Home|plain|#005CA9|#FFFFFF|base|n
+Partick Thistle|Scotland|2018/19|Home|plain|#FFD100|#E4002B|base|n
+Celtic|Scotland|2016/17|Home|hoops|#018749|#FFFFFF|over|n
+Hamilton Academical|Scotland|2018/19|Home|stripes|#C8102E|#FFFFFF|over|n
+Dundee|Scotland|2018/19|Home|plain|#14315E|#FFFFFF|base|n
+Rangers|Scotland|2018/19|Home|plain|#1B458F|#FFFFFF|base|n
+Raith Rovers|Scotland|2016/17|Home|plain|#14315E|#FFFFFF|base|n
+St Johnstone|Scotland|2014/15|Home|plain|#0057B8|#FFFFFF|base|n
+Stirling Albion|Scotland|2016/17|Home|plain|#E4002B|#FFFFFF|base|n
+Heart of Midlothian|Scotland|2018/19|Home|plain|#7A1732|#FFFFFF|base|n
+Dunfermline Athletic|Scotland|2012/13|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Livingston|Scotland|2018/19|Home|plain|#FFD100|#1A1A1A|base|n
+Aberdeen|Scotland|2018/19|Home|plain|#E2001A|#FFFFFF|base|n
+Kilmarnock|Scotland|2014/15|Home|stripes|#14315E|#FFFFFF|over|n
+Queen of the South|Scotland|2018/19|Home|plain|#14315E|#FFFFFF|base|n
+Inverness Caledonian Thistle|Scotland|2018/19|Home|plain|#0057B8|#E4002B|base|n
+Arbroath|Scotland|2018/19|Home|plain|#7A1C3C|#FFFFFF|base|n
+St Johnstone|Scotland|1993/94|Home|plain|#0057B8|#FFFFFF|base|n
+Hamilton Academical|Scotland|1995/96|Home|stripes|#C8102E|#FFFFFF|over|n
+Queen of the South|Scotland|1993/94|Home|plain|#14315E|#FFFFFF|base|n
+Dunfermline Athletic|Scotland|1999/2000|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Livingston|Scotland|1991/92|Home|plain|#FFD100|#1A1A1A|base|n
+Stirling Albion|Scotland|1995/96|Home|plain|#E4002B|#FFFFFF|base|n
+Kilmarnock|Scotland|1993/94|Home|stripes|#14315E|#FFFFFF|over|n
+Aberdeen|Scotland|1995/96|Home|plain|#E2001A|#FFFFFF|base|n
+Rangers|Scotland|1993/94|Home|plain|#1B458F|#FFFFFF|base|n
+Ross County|Scotland|1999/2000|Home|plain|#005CA9|#FFFFFF|base|n
+Arbroath|Scotland|1995/96|Home|plain|#7A1C3C|#FFFFFF|base|n
+Falkirk|Scotland|1997/98|Home|plain|#14315E|#FFFFFF|base|n
+Celtic|Scotland|1995/96|Home|hoops|#018749|#FFFFFF|over|n
+Heart of Midlothian|Scotland|1999/2000|Home|plain|#7A1732|#FFFFFF|base|n
+Hibernian|Scotland|1999/2000|Home|plain|#005E36|#FFFFFF|base|n
+Partick Thistle|Scotland|1997/98|Home|plain|#FFD100|#E4002B|base|n
+St Mirren|Scotland|1991/92|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Raith Rovers|Scotland|1980/81|Home|plain|#14315E|#FFFFFF|base|n
+Hamilton Academical|Scotland|1986/87|Home|stripes|#C8102E|#FFFFFF|over|n
+Hibernian|Scotland|1988/89|Home|plain|#005E36|#FFFFFF|base|n
+Arbroath|Scotland|1980/81|Home|plain|#7A1C3C|#FFFFFF|base|n
+Celtic|Scotland|1982/83|Home|hoops|#018749|#FFFFFF|over|n
+Rangers|Scotland|1986/87|Home|plain|#1B458F|#FFFFFF|base|n
+Dundee|Scotland|1984/85|Home|plain|#14315E|#FFFFFF|base|n
+Stirling Albion|Scotland|1982/83|Home|plain|#E4002B|#FFFFFF|base|n
+St Johnstone|Scotland|1986/87|Home|plain|#0057B8|#FFFFFF|base|n
+Greenock Morton|Scotland|1988/89|Home|hoops|#14315E|#FFFFFF|over|n
+Dundee United|Scotland|1980/81|Home|plain|#FF7000|#1A1A1A|base|n
+Motherwell|Scotland|1980/81|Home|plain|#FFB81C|#7A1732|base|n
+Kilmarnock|Scotland|1986/87|Home|stripes|#14315E|#FFFFFF|over|n
+Heart of Midlothian|Scotland|2022/23|Home|plain|#7A1732|#FFFFFF|base|n
+Celtic|Scotland|2020/21|Home|hoops|#018749|#FFFFFF|over|n
+Ross County|Scotland|2021/22|Home|plain|#005CA9|#FFFFFF|base|n
+Stirling Albion|Scotland|2020/21|Home|plain|#E4002B|#FFFFFF|base|n
+Motherwell|Scotland|2021/22|Home|plain|#FFB81C|#7A1732|base|n
+Dunfermline Athletic|Scotland|2024/25|Home|stripes|#1A1A1A|#FFFFFF|over|n
+Inverness Caledonian Thistle|Scotland|2024/25|Home|plain|#0057B8|#E4002B|base|n
+St Johnstone|Scotland|2020/21|Home|plain|#0057B8|#FFFFFF|base|n
+Hamilton Academical|Scotland|2020/21|Home|stripes|#C8102E|#FFFFFF|over|n
+Queen of the South|Scotland|2024/25|Home|plain|#14315E|#FFFFFF|base|n
+Rangers|Scotland|1975/76|Home|plain|#1B458F|#FFFFFF|base|n
+Aberdeen|Scotland|1971/72|Home|plain|#E2001A|#FFFFFF|base|n
+Motherwell|Scotland|1977/78|Home|plain|#FFB81C|#7A1732|base|n
+Dundee|Scotland|1971/72|Home|plain|#14315E|#FFFFFF|base|n
+Hibernian|Scotland|1963/64|Home|plain|#005E36|#FFFFFF|base|n
+Motherwell|Scotland|1965/66|Home|plain|#FFB81C|#7A1732|base|n
+`;
+
+const KITS = KIT_TABLE.trim().split('\n').slice(1)
+  .map(line => line.split('|').map(c => c.trim()))
+  .filter(c => c.length === 9)
+  .map(([team, country, season, type, pattern, main, sec, role, verified]) =>
+    ({team, country, season, type, pattern, main, sec, role, verified: verified === 'y'}))
+  .filter(k => INCLUDE_UNVERIFIED || k.verified)
+  .filter(k => BANNED_ANSWERS.indexOf(k.main.toUpperCase()) === -1);
+
+/* ============================================================
+   COLOUR SCIENCE — sRGB → CIELAB → CIEDE2000
+   ============================================================ */
+function hexToRgb(hex){
+  const h = hex.replace('#','');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function rgbToHex(r,g,b){
+  const t = n => Math.max(0,Math.min(255,Math.round(n))).toString(16).padStart(2,'0');
+  return '#' + t(r) + t(g) + t(b);
+}
+function hexToLab(hex){
+  let [r,g,b] = hexToRgb(hex).map(v => v/255);
+  const lin = c => c <= 0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4);
+  r = lin(r); g = lin(g); b = lin(b);
+  let X = (r*0.4124564 + g*0.3575761 + b*0.1804375) / 0.95047;
+  let Y = (r*0.2126729 + g*0.7151522 + b*0.0721750) / 1.00000;
+  let Z = (r*0.0193339 + g*0.1191920 + b*0.9503041) / 1.08883;
+  const f = t => t > 0.008856 ? Math.cbrt(t) : (7.787*t + 16/116);
+  const fx = f(X), fy = f(Y), fz = f(Z);
+  return [116*fy - 16, 500*(fx - fy), 200*(fy - fz)];
+}
+const rad = d => d * Math.PI / 180;
+function hueAngle(b, ap){
+  if (b === 0 && ap === 0) return 0;
+  const h = Math.atan2(b, ap) * 180 / Math.PI;
+  return h < 0 ? h + 360 : h;
+}
+// kL weights the lightness term. 1 = textbook CIEDE2000. We score with 2:
+// the player's screen brightness is unknown, and a correct hue judged on a dim
+// phone should not read as a miss.
+const SCREEN_LIGHTNESS_TOLERANCE = 2;
+function deltaE00(lab1, lab2, kL){
+  kL = kL || 1;
+  const [L1,a1,b1] = lab1, [L2,a2,b2] = lab2;
+  const C1 = Math.hypot(a1,b1), C2 = Math.hypot(a2,b2);
+  const Cbar = (C1 + C2) / 2;
+  const G = 0.5 * (1 - Math.sqrt(Math.pow(Cbar,7) / (Math.pow(Cbar,7) + Math.pow(25,7))));
+  const a1p = (1+G)*a1, a2p = (1+G)*a2;
+  const C1p = Math.hypot(a1p,b1), C2p = Math.hypot(a2p,b2);
+  const h1p = hueAngle(b1,a1p), h2p = hueAngle(b2,a2p);
+  const dLp = L2 - L1, dCp = C2p - C1p;
+  let dhp = 0;
+  if (C1p * C2p !== 0){
+    dhp = h2p - h1p;
+    if (dhp > 180) dhp -= 360; else if (dhp < -180) dhp += 360;
+  }
+  const dHp = 2 * Math.sqrt(C1p*C2p) * Math.sin(rad(dhp)/2);
+  const Lbp = (L1 + L2) / 2, Cbp = (C1p + C2p) / 2;
+  let hbp;
+  if (C1p * C2p === 0) hbp = h1p + h2p;
+  else {
+    const d = Math.abs(h1p - h2p);
+    if (d <= 180) hbp = (h1p + h2p) / 2;
+    else if (h1p + h2p < 360) hbp = (h1p + h2p + 360) / 2;
+    else hbp = (h1p + h2p - 360) / 2;
+  }
+  const T = 1 - 0.17*Math.cos(rad(hbp - 30)) + 0.24*Math.cos(rad(2*hbp))
+              + 0.32*Math.cos(rad(3*hbp + 6)) - 0.20*Math.cos(rad(4*hbp - 63));
+  const dTheta = 30 * Math.exp(-Math.pow((hbp - 275)/25, 2));
+  const Rc = 2 * Math.sqrt(Math.pow(Cbp,7) / (Math.pow(Cbp,7) + Math.pow(25,7)));
+  const Sl = 1 + (0.015 * Math.pow(Lbp - 50, 2)) / Math.sqrt(20 + Math.pow(Lbp - 50, 2));
+  const Sc = 1 + 0.045 * Cbp;
+  const Sh = 1 + 0.015 * Cbp * T;
+  const Rt = -Math.sin(rad(2*dTheta)) * Rc;
+  return Math.sqrt(
+    Math.pow(dLp/(kL*Sl), 2) + Math.pow(dCp/Sc, 2) + Math.pow(dHp/Sh, 2) +
+    Rt * (dCp/Sc) * (dHp/Sh)
+  );
+}
+// Hard floor. Beyond this distance the guess is simply a different colour,
+// and a different colour is worth nothing however fast it arrived.
+const ZERO_AT_DELTA_E = 30;
+function scoreFor(dE){
+  if (dE >= ZERO_AT_DELTA_E) return 0;
+  return Math.round(100 * Math.pow(1 - dE / ZERO_AT_DELTA_E, 1.6));
+}
+function verdictFor(s){
+  if (s >= 90) return "Spot on";
+  if (s >= 70) return "Very close";
+  if (s >= 45) return "In the right area";
+  if (s >= 20) return "Some way off";
+  if (s > 0)   return "Barely on the board";
+  return "Not the same colour";
+}
+
+/* ============================================================
+   HSV / HSL / HEX
+   ============================================================ */
+function hsvToHex(h,s,v){
+  const c = v*s, x = c*(1 - Math.abs(((h/60) % 2) - 1)), m = v - c;
+  let r=0,g=0,b=0;
+  if (h < 60)       {r=c; g=x;}
+  else if (h < 120) {r=x; g=c;}
+  else if (h < 180) {g=c; b=x;}
+  else if (h < 240) {g=x; b=c;}
+  else if (h < 300) {r=x; b=c;}
+  else              {r=c; b=x;}
+  return rgbToHex((r+m)*255, (g+m)*255, (b+m)*255);
+}
+function hexToHsv(hex){
+  const [r,g,b] = hexToRgb(hex).map(v => v/255);
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  let h = 0;
+  if (d){
+    if (max === r)      h = 60 * ((((g-b)/d) % 6 + 6) % 6);
+    else if (max === g) h = 60 * ((b-r)/d + 2);
+    else                h = 60 * ((r-g)/d + 4);
+  }
+  return {h, s: max ? d/max : 0, v: max};
+}
+// HSL reads better to a player than HSV: L is simply "how light".
+function hsvToHsl(h,s,v){
+  const l = v * (1 - s/2);
+  return {h, s: (l === 0 || l === 1) ? 0 : (v - l) / Math.min(l, 1 - l), l};
+}
+function hslToHsv(h,s,l){
+  const v = l + s * Math.min(l, 1 - l);
+  return {h, s: v ? 2 * (1 - l/v) : 0, v};
+}
+
+/* ============================================================
+   SHIRT RENDERER — flat fills only. Shading would distort the
+   colour the player is being asked to judge.
+   ============================================================ */
+const SHIRT_PATH = "M62,20 L86,10 C92,26 108,26 114,10 L138,20 L190,50 L168,88 L150,76 L150,210 L50,210 L50,76 L32,88 L10,50 Z";
+function overlayShapes(pattern){
+  let out = '';
+  if (pattern === 'stripes'){
+    for (let x = 0; x < 200; x += 24) out += `<rect x="${x}" y="0" width="12" height="220"/>`;
+  } else if (pattern === 'hoops'){
+    for (let y = 0; y < 220; y += 30) out += `<rect x="0" y="${y}" width="200" height="15"/>`;
+  } else if (pattern === 'halves'){
+    out += `<rect x="100" y="0" width="100" height="220"/>`;
+  } else if (pattern === 'band'){
+    out += `<rect x="82" y="0" width="36" height="220"/>`;
+  } else if (pattern === 'chest'){
+    out += `<rect x="0" y="88" width="200" height="34"/>`;
+  } else if (pattern === 'sash'){
+    out += `<polygon points="140,0 200,0 60,220 0,220"/>`;
+  } else if (pattern === 'checks'){
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 9; j++){
+      if ((i + j) % 2 === 0) out += `<rect x="${i*25}" y="${j*25}" width="25" height="25"/>`;
+    }
+  }
+  return out;
+}
+let uidCounter = 0;
+function shirtSVG(kit, mode, fill, label){
+  const uid = 'k' + (uidCounter++);
+  const mainFill = mode === 'guess' ? `url(#hatch${uid})` : fill;
+  const baseFill = kit.role === 'base' ? mainFill : kit.sec;
+  const overFill = kit.role === 'base' ? kit.sec  : mainFill;
+  return `
+<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label || (kit.team + ' shirt')}">
+  <defs>
+    <clipPath id="clip${uid}"><path d="${SHIRT_PATH}"/></clipPath>
+    <pattern id="hatch${uid}" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="9" height="9" fill="#CFCFD2"/><rect width="4.5" height="9" fill="#B4B4B8"/>
+    </pattern>
+  </defs>
+  <g clip-path="url(#clip${uid})">
+    <rect x="0" y="0" width="200" height="220" fill="${baseFill}"/>
+    <g fill="${overFill}">${kit.pattern === 'plain' ? '' : overlayShapes(kit.pattern)}</g>
+  </g>
+  <path d="${SHIRT_PATH}" fill="none" stroke="#151517" stroke-width="4" stroke-linejoin="round"/>
+</svg>`;
+}
+
+
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const EPOCH = Date.UTC(2026, 0, 1);
+const HOME_PER_ROUND = 4;
+const AWAY_PER_ROUND = 3;
+const ROUND_LENGTH = HOME_PER_ROUND + AWAY_PER_ROUND;
+const SECONDS_PER_KIT = 25;
+const MAX_TIME_BONUS = 25;
+// Speed is only worth rewarding once the guess is actually in the right area.
+// A fast wrong answer is still a wrong answer.
+const BONUS_MIN_ACCURACY = 60;
+
+const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+function utcDayMs(d){
+  d = d || new Date();
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+const isoDay = ms => new Date(ms).toISOString().slice(0,10);
+const puzzleNo = ms => Math.floor((ms - EPOCH) / 86400000) + 1;
+
+function hashStr(s){
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function shuffle(arr, rnd){
+  rnd = rnd || Math.random;
+  const out = arr.slice();
+  for (let i = out.length - 1; i > 0; i--){
+    const j = Math.floor(rnd() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+// One club per round. Two Liverpool aways in the same seven is a worse round
+// than any home/away split is a better one, so the club rule wins where they
+// conflict. Aways are picked first because they are far scarcer than home kits:
+// let a home kit go first and it takes the only slot that club could have used.
+function buildRound(pool, rnd){
+  const clubs = new Set(), tones = new Set(), out = [];
+  // strict = one club AND one exact colour value per round. The colour rule is
+  // what lets the same red sit on twenty seasons of Arsenal in the database
+  // without two of them ever turning up in the same seven.
+  const take = (list, target, strict) => {
+    for (const k of shuffle(list, rnd)){
+      if (out.length >= target) return;
+      if (clubs.has(k.team)) continue;
+      if (strict && tones.has(k.main.toUpperCase())) continue;
+      clubs.add(k.team); tones.add(k.main.toUpperCase()); out.push(k);
+    }
+  };
+  take(pool.filter(k => k.type !== 'Home'), AWAY_PER_ROUND, true);
+  take(pool.filter(k => k.type === 'Home'), ROUND_LENGTH, true);
+  take(pool, ROUND_LENGTH, true);
+  take(pool, ROUND_LENGTH, false);   // last resort: keep the club rule, drop the colour rule
+  return shuffle(out, rnd);
+}
+const dailyRound = dayMs => buildRound(KITS, mulberry32(hashStr('fourfourtone:' + isoDay(dayMs))));
+
+function fmtTime(ms){
+  const s = Math.round(ms / 1000);
+  return s < 60 ? s + 's' : Math.floor(s/60) + ':' + String(s % 60).padStart(2,'0');
+}
+
+/* ============================================================
+   STORAGE — best effort. The game still works without it.
+   ============================================================ */
+const STORE_KEY = 'fourfourtone.v2';
+let storageWorks = true;
+const blankStore = () => ({
+  version:2, name:'', lastPlayed:null, streak:0, maxStreak:0, played:0, totalScore:0,
+  best:null, history:{}, today:null, boards:[]
+});
+function loadStore(){
+  try {
+    const raw = localStorage.getItem(STORE_KEY) || localStorage.getItem('fourfourtone.v1');
+    return raw ? Object.assign(blankStore(), JSON.parse(raw), {version:2}) : blankStore();
+  } catch(e){ storageWorks = false; return blankStore(); }
+}
+function saveStore(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+  catch(e){ storageWorks = false; }
+}
+let store = loadStore();
+
+/* ============================================================
+   LEADERBOARDS
+   Everything the leaderboards need goes through Boards. This
+   implementation keeps scores on this device, which means you are
+   the only player in it. To go live, replace these five functions
+   with fetch() calls to your API and change nothing else.
+   ============================================================ */
+const BOARD_KEY = 'fourfourtone.boards.v1';
+const Boards = {
+  _read(){
+    try { return JSON.parse(localStorage.getItem(BOARD_KEY)) || {global:{}, custom:{}}; }
+    catch(e){ return {global:{}, custom:{}}; }
+  },
+  _write(d){ try { localStorage.setItem(BOARD_KEY, JSON.stringify(d)); } catch(e){} },
+  newCode(){
+    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no I/O/0/1
+    return Array.from({length:6}, () => abc[Math.floor(Math.random()*abc.length)]).join('');
+  },
+  async entries(code, puzzle){
+    const d = this._read();
+    const src = code ? (d.custom[code] && d.custom[code].scores) : d.global;
+    const list = (src && src[puzzle]) || [];
+    return list.slice().sort((a,b) => b.score - a.score || a.ms - b.ms);
+  },
+  async submit(code, puzzle, entry){
+    const d = this._read();
+    let bucket;
+    if (code){
+      if (!d.custom[code]) return false;
+      d.custom[code].scores = d.custom[code].scores || {};
+      bucket = d.custom[code].scores;
+    } else bucket = d.global;
+    bucket[puzzle] = (bucket[puzzle] || []).filter(e => e.name !== entry.name).concat(entry);
+    this._write(d);
+    return true;
+  },
+  async create(name){
+    const d = this._read();
+    const code = this.newCode();
+    d.custom[code] = {name, scores:{}};
+    this._write(d);
+    return {code, name};
+  },
+  async join(code){
+    const d = this._read();
+    return d.custom[code] ? {code, name: d.custom[code].name} : null;
+  }
+};
+
+/* ============================================================
+   STATE + ROUTING
+   ============================================================ */
+const app = document.getElementById('app');
+const today = utcDayMs();
+const todayISO = isoDay(today);
+
+let state = {
+  screen:'home', mode:'daily', round:[], index:0, results:[], roundStart:0,
+  filters:new Set(), boardTab:'global', activeBoard:null, notice:'',
+  h:0, s:0, v:0.5, touched:false, armed:false,
+  timeLeft:SECONDS_PER_KIT, ticker:null, clock:null
+};
+
+const currentHex = () => hsvToHex(state.h, state.s, state.v);
+const currentKit = () => state.round[state.index];
+const maxScore = () => ROUND_LENGTH * (100 + MAX_TIME_BONUS);
+const dailyDone = () => !!(store.today && store.today.date === todayISO);
+
+function go(screen){ state.screen = screen; state.notice = ''; render(); }
+
+/* ---------------- filters ---------------- */
+// One dimension: which nation's league the kit comes from. National-team kits
+// are not a nation's league, so they get their own bucket rather than doubling
+// up (Uruguay the league and Uruguay the country were two chips for one idea).
+const nationOf = k => k.country === 'National' ? 'International' : k.country;
+// "1997/98" and "1986" both yield the decade from their leading year.
+const decadeOf = k => (Math.floor(parseInt(k.season.slice(0,4), 10) / 10) * 10) + 's';
+function nationKeys(){
+  const c = {};
+  KITS.forEach(k => { const n = nationOf(k); c[n] = (c[n]||0)+1; });
+  return Object.keys(c)
+    .map(n => ({key:'N:'+n, label:n, n:c[n]}))
+    .sort((a,b) => b.n - a.n || a.label.localeCompare(b.label));   // busiest first
+}
+function eraKeys(){
+  const c = {};
+  KITS.forEach(k => { const e = decadeOf(k); c[e] = (c[e]||0)+1; });
+  // Chronological, not by volume: a run of decades has an order people expect.
+  return Object.keys(c).sort().map(e => ({key:'E:'+e, label:e, n:c[e]}));
+}
+// Within a group the filters are OR. Across groups they are AND, so picking
+// England and the 1990s means English kits from the nineties, not both sets.
+function filteredPool(){
+  let anyNation = false, anyEra = false;
+  state.filters.forEach(f => { if (f[0] === 'N') anyNation = true; else anyEra = true; });
+  if (!anyNation && !anyEra) return KITS;
+  return KITS.filter(k =>
+    (!anyNation || state.filters.has('N:' + nationOf(k))) &&
+    (!anyEra    || state.filters.has('E:' + decadeOf(k))));
+}
+// The home/away split is a preference, not a requirement. Some decades have no
+// away kits at all, and a 24-kit decade is perfectly playable without one.
+// Distinct CLUBS is the real requirement, since a round holds seven of them.
+function poolViable(pool){
+  return new Set(pool.map(k => k.team)).size >= ROUND_LENGTH &&
+         new Set(pool.map(k => k.main.toUpperCase())).size >= ROUND_LENGTH;
+}
+
+/* ---------------- round lifecycle ---------------- */
+function startDaily(){
+  state.mode = 'daily';
+  state.round = dailyRound(today);
+  beginRound();
+}
+function startFree(){
+  const pool = filteredPool();
+  if (!poolViable(pool)) return;
+  state.mode = 'free';
+  state.round = buildRound(pool);
+  beginRound();
+}
+function beginRound(){
+  state.index = 0; state.results = []; state.roundStart = Date.now();
+  startKit();
+}
+function startKit(){
+  // Everyone starts from the same neutral grey. A random seed hands one player
+  // a head start and scores another on a colour they never chose.
+  state.h = 0; state.s = 0; state.v = 0.5;
+  state.touched = false; state.armed = false;
+  state.timeLeft = SECONDS_PER_KIT;
+  state.screen = 'playing';
+  render();
+  startTimer();
+}
+function startTimer(){
+  stopTimer();
+  const began = Date.now();
+  state.ticker = setInterval(() => {
+    state.timeLeft = Math.max(0, SECONDS_PER_KIT - (Date.now() - began)/1000);
+    const fill = document.querySelector('.timerFill');
+    if (fill) fill.style.transform = `scaleX(${state.timeLeft / SECONDS_PER_KIT})`;
+    const secs = document.getElementById('secs');
+    if (secs) secs.textContent = Math.ceil(state.timeLeft) + 's';
+    if (state.timeLeft <= 0) lockIn(false);
+  }, 100);
+}
+function stopTimer(){ if (state.ticker) clearInterval(state.ticker); state.ticker = null; }
+
+function lockIn(committed){
+  // Tapping lock without touching the picker is almost always a misfire,
+  // so the first tap arms it and says so rather than scoring neutral grey.
+  if (committed === true && !state.touched && !state.armed){
+    state.armed = true;
+    const w = document.getElementById('warn');
+    if (w) w.textContent = 'You have not moved the picker. Tap again to lock in grey.';
+    return;
+  }
+  stopTimer();
+  const kit = currentKit();
+  if (committed !== true && !state.touched){
+    state.results.push({kit, guess:null, dE:null, accuracy:0, bonus:0, total:0});
+  } else {
+    const guess = currentHex();
+    const dE = deltaE00(hexToLab(guess), hexToLab(kit.main), SCREEN_LIGHTNESS_TOLERANCE);
+    const accuracy = scoreFor(dE);
+    const bonus = accuracy >= BONUS_MIN_ACCURACY
+      ? Math.round((state.timeLeft / SECONDS_PER_KIT) * MAX_TIME_BONUS) : 0;
+    state.results.push({kit, guess, dE, accuracy, bonus, total: accuracy + bonus});
+  }
+  state.screen = 'revealed';
+  render();
+}
+function next(){
+  if (state.index + 1 >= state.round.length) finishRound();
+  else { state.index++; startKit(); }
+}
+function finishRound(){
+  const total = state.results.reduce((a,r) => a + r.total, 0);
+  const ms = Date.now() - state.roundStart;
+  if (state.mode === 'daily'){
+    const yesterday = isoDay(today - 86400000);
+    store.streak = store.lastPlayed === yesterday ? store.streak + 1 : 1;
+    store.maxStreak = Math.max(store.maxStreak, store.streak);
+    store.lastPlayed = todayISO;
+    store.played += 1;
+    store.totalScore += total;
+    store.history[todayISO] = total;
+    if (!store.best || total > store.best.score) store.best = {score:total, ms, date:todayISO};
+    store.today = {date:todayISO, total, ms, published:false,
+                   results: state.results.map(r => ({kit:r.kit, guess:r.guess, dE:r.dE,
+                     accuracy:r.accuracy, bonus:r.bonus, total:r.total}))};
+    saveStore();
+  } else {
+    state.freeMs = ms;
+  }
+  state.screen = 'done';
+  render();
+}
+
+/* ============================================================
+   RENDER
+   The neutral surround binds only while a guess is open. Once the
+   answer is out, colour is free — which is why the results screen
+   looks nothing like the play screen.
+   ============================================================ */
+function bar(right, backTo){
+  return `<div class="topbar">
+    <button class="wordmark" id="homeBtn" aria-label="FourFourTone home">FourFourTone</button>
+    ${backTo ? `<button class="back" data-go="${backTo}">Back</button>`
+             : `<div class="counter">${right || ''}</div>`}
+  </div>`;
+}
+function wireBar(){
+  const h = document.getElementById('homeBtn');
+  if (h) h.onclick = () => go('home');
+  app.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+}
+function pips(){
+  let out = '<div class="pips">';
+  for (let i = 0; i < ROUND_LENGTH; i++)
+    out += `<div class="pip ${i < state.index ? 'done' : i === state.index ? 'now' : ''}"></div>`;
+  return out + '</div>';
+}
+const seasonGhost = kit => `<div class="ghost" aria-hidden="true">${kit.season.split('/')[0]}</div>`;
+const stageHead = kit => `<h1 class="team">${kit.team}</h1>
+  <p class="country">${kit.country}, ${kit.season} ${kit.type}</p>`;
+
+function render(){
+  stopClock();
+  const out = ({home:renderHome, play:renderPlay, freeplay:renderFreeplay, playing:renderPlaying,
+    revealed:renderRevealed, done:renderDone, boards:renderBoards, profile:renderProfile}
+  )[state.screen]();
+  out && out.then ? out.then(wireBar) : wireBar();
+}
+
+/* ---------------- home ---------------- */
+function heroFan(){
+  return [-14,-7,0,7,14].map((deg,i) => {
+    const shade = ['#6E6E73','#818186','#94949A','#818186','#6E6E73'][i];
+    const mock = {team:'', pattern:['plain','stripes','hoops','halves','plain'][i],
+                  main:shade, sec:'#5A5A60', role:'base'};
+    return `<div class="h" style="transform:rotate(${deg}deg) translateY(${Math.abs(deg)*0.8}px)">
+              ${shirtSVG(mock,'colour',shade,'')}</div>`;
+  }).join('');
+}
+function renderHome(){
+  app.innerHTML = `
+    ${bar('No. ' + puzzleNo(today))}
+    <div class="hero" aria-hidden="true">${heroFan()}</div>
+    <h1 class="display homeTitle">Seven shirts.<br>Guess the colour.</h1>
+    <p class="homeSub">The club, the season and the pattern are yours. The colour is hatched out.</p>
+    <div class="menu">
+      <button class="tile" data-go="play">
+        <span><span class="tileName">Play</span>
+          <span class="tileNote">${dailyDone() ? 'Today is done' : "Today's game is waiting"}</span></span>
+        <span class="tileMeta numeral">${store.streak || ''}</span>
+      </button>
+      <button class="tile" data-go="boards">
+        <span><span class="tileName">Leaderboards</span>
+          <span class="tileNote">Global and private boards</span></span>
+      </button>
+      <button class="tile" data-go="profile">
+        <span><span class="tileName">Profile</span>
+          <span class="tileNote">${store.name || 'Set a name'}</span></span>
+      </button>
+    </div>
+    <div class="spacer"></div>
+    <footer>${KITS.length} kits in rotation. Scored on perceptual colour distance.
+      ${storageWorks ? '' : 'Storage is blocked, so nothing is saved.'}</footer>`;
+}
+
+/* ---------------- play menu ---------------- */
+function renderPlay(){
+  const done = dailyDone();
+  app.innerHTML = `
+    ${bar('', 'home')}
+    <h1 class="h2">Play</h1>
+    <p class="lede">The daily round is the same seven shirts for everyone. Freeplay is yours to shape.</p>
+    <div class="menu">
+      <button class="tile" id="daily">
+        <span><span class="tileName">Today's game</span>
+          <span class="tileNote">${done ? 'Completed. See your results' : 'No. ' + puzzleNo(today) + ' \u00B7 seven shirts'}</span></span>
+        <span class="tileMeta ${done ? 'numeral' : 'dim'}">${done ? store.today.total : 'Play'}</span>
+      </button>
+      <button class="tile" data-go="freeplay">
+        <span><span class="tileName">Freeplay</span>
+          <span class="tileNote">Pick the leagues and nations you want</span></span>
+        <span class="tileMeta dim">Set up</span>
+      </button>
+    </div>
+    <div class="spacer"></div>`;
+  document.getElementById('daily').onclick = () => {
+    if (done){ state.mode = 'daily'; state.results = store.today.results; go('done'); }
+    else startDaily();
+  };
+}
+
+/* ---------------- freeplay setup ---------------- */
+function renderFreeplay(){
+  const pool = filteredPool();
+  const ok = poolViable(pool);
+  const chips = list => list.map(f =>
+    `<button class="chip ${state.filters.has(f.key) ? 'on' : ''}" data-f="${f.key}">
+       ${f.label}<small>${f.n}</small></button>`).join('');
+  app.innerHTML = `
+    ${bar('', 'play')}
+    <h1 class="h2">Freeplay</h1>
+    <div class="filterGroup">
+      <div class="filterTitle">Nations, most kits first</div>
+      <div class="chipRow">${chips(nationKeys())}</div>
+    </div>
+    <div class="filterGroup">
+      <div class="filterTitle">Eras</div>
+      <div class="chipRow">${chips(eraKeys())}</div>
+    </div>
+    <p class="poolNote">${pool.length} kits from ${new Set(pool.map(k => k.team)).size} clubs${ok ? '' :
+      ' \u2014 not enough variety for a round of ' + ROUND_LENGTH + '. Add another filter.'}</p>
+    <button class="btn" id="goFree" ${ok ? '' : 'disabled'}>Start freeplay</button>
+    ${state.filters.size ? '<button class="btn quiet" id="clearF">Clear filters</button>' : ''}
+    <div class="spacer"></div>`;
+  app.querySelectorAll('[data-f]').forEach(b => b.onclick = () => {
+    const k = b.dataset.f;
+    state.filters.has(k) ? state.filters.delete(k) : state.filters.add(k);
+    render();
+  });
+  document.getElementById('goFree').onclick = startFree;
+  const c = document.getElementById('clearF');
+  if (c) c.onclick = () => { state.filters.clear(); render(); };
+}
+
+/* ---------------- playing ---------------- */
+function renderPlaying(){
+  const kit = currentKit();
+  app.innerHTML = `
+    ${bar(`${state.index + 1} / ${state.round.length} &nbsp;<span id="secs">${Math.ceil(state.timeLeft)}s</span>`)}
+    ${pips()}
+    <div class="timerTrack"><div class="timerFill"></div></div>
+    <div class="stage">
+      ${seasonGhost(kit)}
+      <div class="shirts duo">
+        <div class="shirtWrap">
+          ${shirtSVG(kit,'guess',null,kit.team + ' ' + kit.season + ' ' + kit.type + ' shirt, colour hidden')}
+          <div class="shirtLabel">The shirt</div>
+        </div>
+        <div class="shirtWrap" id="liveShirt">
+          ${shirtSVG(kit,'colour','#808080','Your guess on the same shirt')}
+          <div class="shirtLabel">Your guess</div>
+        </div>
+      </div>
+      ${stageHead(kit)}
+    </div>
+    <div class="picker">
+      <div class="sv" id="sv" tabindex="0" role="application"
+           aria-label="Saturation and brightness pad. Arrow keys adjust, hold shift for bigger steps.">
+        <div class="knob" id="knob"></div>
+      </div>
+      <div class="hue" id="hue" tabindex="0" role="slider" aria-label="Hue"
+           aria-valuemin="0" aria-valuemax="359"><div class="hueKnob" id="hueKnob"></div></div>
+      <div class="readout">
+        <div class="swatch" id="swatch"></div>
+        <div class="readoutText">
+          <input class="hex" id="hexInput" type="text" inputmode="text" spellcheck="false"
+                 autocomplete="off" maxlength="7"
+                 aria-label="Your guess as a hex colour code. Type one to set it exactly.">
+          <div class="numbers" id="numbers"></div>
+        </div>
+      </div>
+      <button class="btn" id="lock">Lock it in</button>
+      <p class="warn" id="warn"></p>
+    </div>
+    <div class="spacer"></div>`;
+  wireField(); wireHexInput(); paintPicker();
+  document.getElementById('lock').onclick = () => lockIn(true);
+}
+
+/* ---------------- reveal ---------------- */
+function renderRevealed(){
+  const r = state.results[state.results.length - 1];
+  const last = state.index + 1 >= state.round.length;
+  const mystery = r.guess
+    ? `<div class="shirtWrap"><div style="position:relative">
+         ${shirtSVG(r.kit,'guess',null,'The shirt before the reveal')}
+         <div class="flood ${reduceMotion ? '' : 'animate'}">
+           ${shirtSVG(r.kit,'colour',r.kit.main,'The real shirt')}
+         </div></div>
+         <div class="shirtLabel">${r.kit.main.toUpperCase()}</div></div>`
+    : `<div class="shirtWrap">${shirtSVG(r.kit,'colour',r.kit.main,'The real shirt')}
+         <div class="shirtLabel">${r.kit.main.toUpperCase()}</div></div>`;
+  const yours = r.guess ? `<div class="shirtWrap">${shirtSVG(r.kit,'colour',r.guess,'Your guess')}
+         <div class="shirtLabel">${r.guess.toUpperCase()}</div></div>` : '';
+  app.innerHTML = `
+    ${bar(`${state.index + 1} / ${state.round.length}`)}
+    ${pips()}
+    <div class="stage">
+      ${seasonGhost(r.kit)}
+      <div class="shirts ${r.guess ? 'duo' : 'solo'}">${mystery}${yours}</div>
+      ${stageHead(r.kit)}
+    </div>
+    <div class="result">
+      <div class="scoreLine" role="status">
+        <div class="score numeral" id="bigScore">${reduceMotion ? r.total : 0}</div>
+        <div class="verdict">${r.guess ? verdictFor(r.accuracy) : 'Ran out of time'}</div>
+      </div>
+      <div class="detail">${r.guess
+        ? `${r.accuracy} for accuracy${r.bonus ? ` and ${r.bonus} for the clock`
+           : (r.accuracy > 0 ? '. Too far out for a speed bonus' : '')}. Colour distance &Delta;E ${r.dE.toFixed(1)}.`
+        : 'You did not move the picker, so nothing was locked in.'}</div>
+      <button class="btn" id="next">${last ? 'See your round' : 'Next shirt'}</button>
+    </div>
+    <div class="spacer"></div>`;
+  document.getElementById('next').onclick = next;
+  if (!reduceMotion) countUp(document.getElementById('bigScore'), r.total, 650);
+}
+// Motion that reports a state change, not decoration.
+function countUp(el, to, ms){
+  if (!el) return;
+  const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : null;
+  if (!to || !raf){ el.textContent = to || 0; return; }
+  const began = performance.now();
+  const step = now => {
+    const p = Math.min(1, (now - began) / ms);
+    el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) raf(step);
+  };
+  raf(step);
+}
+
+/* ---------------- results ---------------- */
+// One silhouette per shirt, split down the middle: your colour against the real
+// one. Seven of those side by side is the thing worth screenshotting.
+function splitShirtSVG(guess, actual){
+  const uid = 's' + (uidCounter++);
+  return `
+<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <defs><clipPath id="sc${uid}"><path d="${SHIRT_PATH}"/></clipPath></defs>
+  <g clip-path="url(#sc${uid})">
+    <rect x="0" y="0" width="100" height="220" fill="${guess || '#2A2A2E'}"/>
+    <rect x="100" y="0" width="100" height="220" fill="${actual}"/>
+  </g>
+  <path d="M100,10 L100,210" stroke="rgba(0,0,0,.35)" stroke-width="2"/>
+  <path d="${SHIRT_PATH}" fill="none" stroke="#0E0E10" stroke-width="5" stroke-linejoin="round"/>
+</svg>`;
+}
+function renderDone(){
+  const daily = state.mode === 'daily';
+  const results = state.results;
+  const total = results.reduce((a,r) => a + r.total, 0);
+  const avg = store.played ? Math.round(store.totalScore / store.played) : 0;
+  const cells = results.map(r => `<div class="cell">
+      <div class="cellName">${r.kit.team}</div>
+      <div class="cellMeta">${r.kit.season} ${r.kit.type}</div>
+      ${splitShirtSVG(r.guess, r.kit.main)}
+      <div class="cellScore numeral">${r.total}</div></div>`).join('');
+  const published = daily && store.today && store.today.published;
+  app.innerHTML = `
+    ${bar('', daily ? 'home' : 'freeplay')}
+    <div class="result" style="margin-top:var(--s2)">
+      <div class="scoreLine" role="status">
+        <div class="score numeral" id="bigScore">${reduceMotion ? total : 0}</div>
+        <div class="verdict">out of ${maxScore()}${daily ? '' : ', freeplay'}</div>
+      </div>
+      <div class="grid">${cells}</div>
+      <p class="legend">Left half is the colour you picked. Right half is the shirt.</p>
+      ${daily ? `
+      <div class="stats">
+        <div class="stat"><div class="statNum numeral">${store.streak}</div><div class="statLabel">day streak</div></div>
+        <div class="stat"><div class="statNum numeral">${store.maxStreak}</div><div class="statLabel">best streak</div></div>
+        <div class="stat"><div class="statNum numeral">${store.played}</div><div class="statLabel">rounds</div></div>
+        <div class="stat"><div class="statNum numeral">${avg}</div><div class="statLabel">average</div></div>
+      </div>
+      ${published ? '<p class="poolNote">Published to the leaderboard.</p>' : `
+        <input class="field" id="pubName" maxlength="18" placeholder="Name for the leaderboard"
+               value="${store.name || ''}" aria-label="Your leaderboard name">
+        <button class="btn quiet" id="publish">Publish to leaderboard</button>`}
+      <div class="countdown">
+        <div class="countdownNum numeral" id="cd" role="timer" aria-live="off">--:--:--</div>
+        <div class="countdownLabel">until the next round</div>
+      </div>
+      <button class="btn" id="share">Copy your result</button>
+      <button class="btn quiet" data-go="freeplay">Freeplay</button>`
+    : `<button class="btn" id="again">Another freeplay round</button>
+       <button class="btn quiet" data-go="freeplay">Change filters</button>`}
+      ${state.notice ? `<p class="poolNote">${state.notice}</p>` : ''}
+    </div>
+    <div class="spacer"></div>`;
+  if (daily){
+    startClock();
+    document.getElementById('share').onclick = shareResult;
+    const p = document.getElementById('publish');
+    if (p) p.onclick = publishToday;
+  } else {
+    document.getElementById('again').onclick = startFree;
+  }
+  if (!reduceMotion) countUp(document.getElementById('bigScore'), total, 800);
+}
+async function publishToday(){
+  const name = (document.getElementById('pubName').value || '').trim();
+  if (name.length < 2){ state.notice = 'Pick a name of at least two characters.'; return render(); }
+  store.name = name;
+  await Boards.submit(null, puzzleNo(today), {name, score:store.today.total, ms:store.today.ms});
+  for (const b of store.boards) await Boards.submit(b.code, puzzleNo(today), {name, score:store.today.total, ms:store.today.ms});
+  store.today.published = true;
+  saveStore();
+  state.notice = 'Published. Your score is on the global board and any private boards you have joined.';
+  render();
+}
+
+/* ---------------- leaderboards ---------------- */
+async function renderBoards(){
+  const puzzle = puzzleNo(today);
+  const isGlobal = state.boardTab === 'global';
+  const code = isGlobal ? null : state.activeBoard;
+  const rows = await Boards.entries(code, puzzle);
+  const list = rows.length ? `<div class="board">${rows.map((e,i) => `
+      <div class="bRow ${e.name === store.name ? 'you' : ''}">
+        <div class="bRank numeral">${i+1}</div>
+        <div class="bName">${e.name}</div>
+        <div class="bScore numeral">${e.score}</div>
+      </div>`).join('')}</div>`
+    : `<div class="empty">No scores yet for No. ${puzzle}.
+        ${dailyDone() ? 'Publish yours from the results screen.' : 'Play today\u2019s round first.'}
+        <br><br>This build keeps scores on your device, so nobody else appears here until a server is connected.</div>`;
+  const boards = store.boards.map(b =>
+    `<button class="chip ${state.activeBoard === b.code ? 'on' : ''}" data-b="${b.code}">${b.name}<small>${b.code}</small></button>`).join('');
+  app.innerHTML = `
+    ${bar('', 'home')}
+    <h1 class="h2">Leaderboards</h1>
+    <div class="seg">
+      <button class="${isGlobal ? 'on' : ''}" data-tab="global">Global</button>
+      <button class="${isGlobal ? '' : 'on'}" data-tab="custom">Private</button>
+    </div>
+    ${isGlobal ? `<p class="lede">Everyone who published a score for today's round.</p>${list}` : `
+      <div class="chipRow" style="margin-top:var(--s4)">${boards ||
+        '<p class="lede">You have not joined a board yet.</p>'}</div>
+      ${state.activeBoard ? list : ''}
+      <input class="field" id="joinCode" maxlength="6" placeholder="Enter a six-character code"
+             style="text-transform:uppercase" aria-label="Board code">
+      <button class="btn quiet" id="joinBtn">Join a board</button>
+      <button class="btn quiet" id="createBtn">Create a board</button>`}
+    ${state.notice ? `<p class="poolNote">${state.notice}</p>` : ''}
+    <div class="spacer"></div>`;
+  wireBar();
+  app.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {
+    state.boardTab = b.dataset.tab; state.notice = ''; render();
+  });
+  app.querySelectorAll('[data-b]').forEach(b => b.onclick = () => {
+    state.activeBoard = b.dataset.b; render();
+  });
+  const j = document.getElementById('joinBtn');
+  if (j) j.onclick = async () => {
+    const code = (document.getElementById('joinCode').value || '').trim().toUpperCase();
+    const found = await Boards.join(code);
+    if (!found){ state.notice = 'No board with that code.'; return render(); }
+    if (!store.boards.some(b => b.code === code)) store.boards.push(found);
+    saveStore(); state.activeBoard = code; state.notice = 'Joined ' + found.name + '.'; render();
+  };
+  const c = document.getElementById('createBtn');
+  if (c) c.onclick = async () => {
+    const b = await Boards.create((store.name || 'My') + "'s board");
+    store.boards.push(b); saveStore();
+    state.activeBoard = b.code;
+    state.notice = 'Board created. Share the code ' + b.code + ' with your friends.';
+    render();
+  };
+}
+
+/* ---------------- profile ---------------- */
+function renderProfile(){
+  const avg = store.played ? Math.round(store.totalScore / store.played) : 0;
+  const initial = (store.name || '?').trim().charAt(0).toUpperCase();
+  // Last 7 days as a streak bar, last 70 as an intensity grid.
+  const seg = Array.from({length:7}, (_,i) => {
+    const d = isoDay(today - (6-i)*86400000);
+    return `<div class="streakSeg ${store.history[d] != null ? 'on' : ''}" title="${d}"></div>`;
+  }).join('');
+  const days = Array.from({length:70}, (_,i) => {
+    const d = isoDay(today - (69-i)*86400000);
+    const v = store.history[d];
+    const a = v == null ? 0 : 0.15 + 0.85 * Math.min(1, v / maxScore());
+    return `<div class="day" style="${v == null ? '' : `background:rgba(234,234,236,${a.toFixed(2)})`}"
+                 title="${d}${v == null ? '' : ': ' + v}"></div>`;
+  }).join('');
+  app.innerHTML = `
+    ${bar('', 'home')}
+    <div class="pHead">
+      <div class="pAvatar numeral">${initial}</div>
+      <div>
+        <div class="pName" id="pName">${store.name || 'No name yet'}</div>
+        <button class="pEdit" id="editName">Edit name</button>
+      </div>
+    </div>
+    <div id="nameEdit" hidden>
+      <input class="field" id="nameInput" maxlength="18" value="${store.name || ''}"
+             placeholder="Your name" aria-label="Your name">
+      <button class="btn quiet" id="saveName">Save</button>
+    </div>
+    <div class="bigStat">
+      <div class="bigStatNum numeral">${store.best ? store.best.score : 0}</div>
+      <div class="bigStatLabel">Best round${store.best ? ` \u00B7 ${fmtTime(store.best.ms)} \u00B7 ${store.best.date}` : ''}</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="statNum numeral">${store.streak}</div><div class="statLabel">streak</div></div>
+      <div class="stat"><div class="statNum numeral">${store.maxStreak}</div><div class="statLabel">best streak</div></div>
+      <div class="stat"><div class="statNum numeral">${store.played}</div><div class="statLabel">rounds</div></div>
+      <div class="stat"><div class="statNum numeral">${avg}</div><div class="statLabel">average</div></div>
+    </div>
+    <div class="filterGroup">
+      <div class="filterTitle">This week</div>
+      <div class="streakBar">${seg}</div>
+    </div>
+    <div class="filterGroup">
+      <div class="filterTitle">Last ten weeks</div>
+      <div class="heat">${days}</div>
+      <div class="scale"><span>Lower</span>
+        <i style="background:rgba(234,234,236,.2)"></i><i style="background:rgba(234,234,236,.45)"></i>
+        <i style="background:rgba(234,234,236,.7)"></i><i style="background:rgba(234,234,236,1)"></i>
+        <span>Higher</span></div>
+    </div>
+    <div class="spacer"></div>
+    <footer>Stats live on this device only until you connect an account.</footer>`;
+  document.getElementById('editName').onclick = () => {
+    document.getElementById('nameEdit').hidden = false;
+    document.getElementById('nameInput').focus();
+  };
+  document.getElementById('saveName').onclick = () => {
+    store.name = (document.getElementById('nameInput').value || '').trim();
+    saveStore(); render();
+  };
+}
+
+/* ---------------- countdown + share ---------------- */
+function startClock(){
+  const tick = () => {
+    const el = document.getElementById('cd');
+    if (!el) return stopClock();
+    const s = Math.max(0, Math.floor((today + 86400000 - Date.now()) / 1000));
+    el.textContent = `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  };
+  tick(); state.clock = setInterval(tick, 1000);
+}
+function stopClock(){ if (state.clock) clearInterval(state.clock); state.clock = null; }
+
+// Density blocks, not coloured squares: the score must not be encoded in hue
+// on a game played by people who may not see hue. Nothing here names a kit.
+const band = a => a >= 90 ? '\u2588' : a >= 70 ? '\u2593' : a >= 45 ? '\u2592' : a >= 20 ? '\u2591' : '\u00B7';
+function shareResult(){
+  const total = state.results.reduce((a,r) => a + r.total, 0);
+  const text = `FourFourTone No. ${puzzleNo(today)}\n${total}/${maxScore()}\n`
+             + state.results.map(r => band(r.accuracy)).join('')
+             + (store.streak > 1 ? `\n${store.streak} day streak` : '');
+  const btn = document.getElementById('share');
+  const done = () => { btn.textContent = 'Copied'; setTimeout(() => btn.textContent = 'Copy your result', 1600); };
+  if (navigator.clipboard && window.isSecureContext)
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch(e){}
+  document.body.removeChild(ta);
+}
+
+/* ============================================================
+   PICKER
+   ============================================================ */
+function paintPicker(){
+  const hex = currentHex();
+  const hsl = hsvToHsl(state.h, state.s, state.v);
+  const sv = document.getElementById('sv');
+  if (sv){
+    sv.style.background = `linear-gradient(to top, #000, rgba(0,0,0,0)), `
+                        + `linear-gradient(to right, #fff, ${hsvToHex(state.h,1,1)})`;
+    const knob = document.getElementById('knob');
+    knob.style.left = (state.s * 100) + '%';
+    knob.style.top = ((1 - state.v) * 100) + '%';
+    knob.style.background = hex;
+    document.getElementById('hueKnob').style.left = ((state.h / 360) * 100) + '%';
+    const hue = document.getElementById('hue');
+    hue.setAttribute('aria-valuenow', Math.round(state.h));
+    hue.setAttribute('aria-valuetext', Math.round(state.h) + ' degrees');
+  }
+  // The guess shown at shirt scale, not just as a chip. Judging a large area
+  // is far more accurate than judging a swatch.
+  const live = document.getElementById('liveShirt');
+  if (live) live.firstElementChild.outerHTML =
+    shirtSVG(currentKit(), 'colour', hex, 'Your guess on the same shirt');
+  document.getElementById('swatch').style.background = hex;
+  const input = document.getElementById('hexInput');
+  if (document.activeElement !== input){ input.value = hex.toUpperCase(); input.classList.remove('bad'); }
+  document.getElementById('numbers').innerHTML =
+    'hue <b>' + Math.round(hsl.h) + '\u00B0</b>  saturation <b>' + Math.round(hsl.s*100) +
+    '%</b>  lightness <b>' + Math.round(hsl.l*100) + '%</b>';
+}
+const clamp01 = n => Math.max(0, Math.min(1, n));
+function wireField(){
+  const sv = document.getElementById('sv'), hue = document.getElementById('hue');
+  const svMove = e => {
+    const r = sv.getBoundingClientRect();
+    state.s = clamp01((e.clientX - r.left) / r.width);
+    state.v = clamp01(1 - (e.clientY - r.top) / r.height);
+    state.touched = true; paintPicker();
+  };
+  const hueMove = e => {
+    const r = hue.getBoundingClientRect();
+    state.h = clamp01((e.clientX - r.left) / r.width) * 359.9;
+    state.touched = true; paintPicker();
+  };
+  const drag = (el, move) => el.addEventListener('pointerdown', e => {
+    el.setPointerCapture(e.pointerId); move(e);
+    const onMove = ev => move(ev);
+    const onUp = () => {
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+    };
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
+  });
+  drag(sv, svMove); drag(hue, hueMove);
+  sv.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 0.1 : 0.02;
+    if (e.key === 'ArrowRight') state.s = clamp01(state.s + step);
+    else if (e.key === 'ArrowLeft') state.s = clamp01(state.s - step);
+    else if (e.key === 'ArrowUp') state.v = clamp01(state.v + step);
+    else if (e.key === 'ArrowDown') state.v = clamp01(state.v - step);
+    else return;
+    e.preventDefault(); state.touched = true; paintPicker();
+  });
+  hue.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 15 : 3;
+    if (e.key === 'ArrowRight') state.h = (state.h + step) % 360;
+    else if (e.key === 'ArrowLeft') state.h = (state.h - step + 360) % 360;
+    else return;
+    e.preventDefault(); state.touched = true; paintPicker();
+  });
+}
+function wireHexInput(){
+  const input = document.getElementById('hexInput');
+  input.addEventListener('input', () => {
+    const v = input.value.trim().replace(/^#/, '');
+    if (!/^[0-9A-Fa-f]{6}$/.test(v)){ input.classList.add('bad'); return; }
+    input.classList.remove('bad');
+    const hsv = hexToHsv('#' + v);
+    state.h = hsv.h; state.s = hsv.s; state.v = hsv.v;
+    state.touched = true; paintPicker();
+  });
+  input.addEventListener('blur', paintPicker);
+}
+
+render();
+
+</script>
+</body>
+</html>
