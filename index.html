@@ -14,20 +14,27 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400;62..125,500;62..125,700&display=swap" rel="stylesheet">
 <style>  :root{
-    --ink:#0E0E10;
-    --raise:#17171A;
-    --raise2:#1F1F24;
-    --line:#43434A;
-    --edge:#5E5E66;
-    --stage:#76767A;
-    --on-stage:#131315;
-    --on-stage-2:#FFFFFF;
-    --text:#EAEAEC;
-    --muted:#8E8E95;
-    --quiet:#7C7C83;
-    --bad:#C46A6A;
+    --ink:#07070B;
+    --raise:rgba(255,255,255,.045);
+    --raise2:rgba(255,255,255,.075);
+    --glass:rgba(16,16,24,.62);
+    --hair:rgba(255,255,255,.10);
+    --line:rgba(255,255,255,.12);
+    --edge:rgba(255,255,255,.26);
+    /* The one area that stays achromatic: a coloured surround measurably shifts
+       how the swatch is perceived, and the whole score depends on that call. */
+    --stage:#1C1C21;
+    --on-stage:#F2F2F4;
+    --on-stage-2:#A9A9B4;
+    --text:#F2F2F4;
+    --muted:#9A9AA6;
+    --quiet:#7C7C88;
+    --bad:#FF7A7A;
+    --grad:linear-gradient(135deg,#7C3AED 0%,#5B34E0 45%,#2563EB 100%);
+    --grad-soft:linear-gradient(135deg,rgba(124,58,237,.22),rgba(37,99,235,.18));
+    --rainbow:linear-gradient(90deg,#FF4D4D,#FFB020,#FFE600,#3DDC84,#3B82F6,#A855F7);
     --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
-    --radius:20px;
+    --radius:22px;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
@@ -36,51 +43,78 @@
     font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
     display:flex;justify-content:center;
     padding:0 var(--s4) env(safe-area-inset-bottom);
+    position:relative;overflow-x:hidden;
+  }
+  /* Floodlit-stadium atmosphere, built from gradients rather than a photo:
+     no licensing, no payload, and it scales to any viewport. */
+  body::before{
+    content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;
+    background:
+      radial-gradient(90% 55% at 50% -10%, rgba(59,130,246,.20), transparent 60%),
+      radial-gradient(60% 40% at 8% 8%, rgba(124,58,237,.18), transparent 65%),
+      radial-gradient(60% 45% at 95% 15%, rgba(34,211,238,.12), transparent 65%),
+      radial-gradient(80% 60% at 50% 105%, rgba(16,185,129,.10), transparent 60%);
+  }
+  body::after{
+    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+    background:repeating-linear-gradient(115deg,rgba(255,255,255,.035) 0 1px,transparent 1px 140px);
   }
   #app{width:100%;max-width:480px;display:flex;flex-direction:column;min-height:100%}
 
-  .display{font-weight:700;letter-spacing:-.045em;line-height:.92;font-variation-settings:'wdth' 112}
-  /* Condensed numerals. Football's own typography is the number on a shirt back. */
+  .display{font-weight:700;letter-spacing:-.045em;line-height:.94;font-variation-settings:'wdth' 108}
   .numeral{font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;
            line-height:.85;font-variation-settings:'wdth' 68}
+  .tint{background:var(--rainbow);-webkit-background-clip:text;background-clip:text;color:transparent}
 
-  .topbar{display:flex;justify-content:space-between;align-items:center;padding:var(--s4) 2px var(--s3);flex:none;gap:var(--s3)}
-  .wordmark{font-size:14px;font-weight:700;letter-spacing:.01em;font-variation-settings:'wdth' 122;
-            background:none;color:var(--text);padding:var(--s2) 0;margin:calc(var(--s2) * -1) 0}
-  .counter{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-  .back{background:none;color:var(--muted);font-size:13px;padding:var(--s2) 0}
+  /* ---------- chrome ---------- */
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:var(--s3);
+          padding:var(--s3) var(--s4);margin-top:var(--s4);flex:none;
+          background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+          border:1px solid var(--hair);border-radius:18px}
+  .wordmark{display:flex;align-items:center;gap:var(--s2);background:none;color:var(--text);
+            font-size:17px;font-weight:700;letter-spacing:-.02em;padding:var(--s2) 0;
+            font-variation-settings:'wdth' 112}
+  .wordmark i{width:22px;height:22px;flex:none;display:block;
+              background:var(--rainbow);border-radius:6px;opacity:.95}
+  .counter{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .back{background:none;color:var(--muted);font-size:13px;padding:var(--s2) var(--s3);
+        border-radius:10px;border:1px solid var(--hair)}
+  .back:hover{color:var(--text);background:var(--raise)}
+  .navlinks{display:none;gap:var(--s1);align-items:center}
+  .navlinks button{background:none;color:var(--muted);font-size:14px;font-weight:500;
+                   padding:var(--s2) var(--s3);border-radius:10px;min-height:40px}
+  .navlinks button:hover{color:var(--text);background:var(--raise)}
+  .navlinks button.cta{background:var(--grad);color:#fff;font-weight:700;padding:var(--s2) var(--s5);
+                       box-shadow:0 6px 20px rgba(59,130,246,.35)}
 
-  .pips{display:flex;gap:5px;flex:none;margin-bottom:var(--s3)}
+  .pips{display:flex;gap:5px;flex:none;margin-top:var(--s3)}
   .pip{height:4px;flex:1;border-radius:2px;background:var(--line)}
   .pip.done{background:var(--quiet)}
-  .pip.now{background:var(--text)}
-  .timerTrack{height:2px;background:var(--line);border-radius:2px;margin-bottom:var(--s3);overflow:hidden;flex:none}
-  .timerFill{height:100%;background:var(--text);width:100%;transform-origin:left center}
+  .pip.now{background:var(--grad);background-image:var(--grad)}
+  .timerTrack{height:2px;background:var(--line);border-radius:2px;margin-top:var(--s2);overflow:hidden;flex:none}
+  .timerFill{height:100%;background:var(--grad);width:100%;transform-origin:left center}
 
-  /* ---------- stage ---------- */
+  /* ---------- stage: the controlled viewing area ---------- */
   .stage{position:relative;background:var(--stage);border-radius:var(--radius);
-         padding:var(--s5) var(--s4) var(--s4);flex:none;overflow:hidden;
-         display:flex;flex-direction:column;align-items:center}
-  /* Achromatic texture only. A tint here would shift how the shirt reads. */
+         padding:var(--s5) var(--s4) var(--s4);flex:none;overflow:hidden;margin-top:var(--s3);
+         display:flex;flex-direction:column;align-items:center;
+         border:1px solid var(--hair);box-shadow:0 24px 60px rgba(0,0,0,.55)}
   .stage::before{content:'';position:absolute;inset:0;pointer-events:none;
-    background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 1px,transparent 1px 7px)}
-  .ghost{position:absolute;top:-10px;left:0;right:0;text-align:center;font-size:150px;
-         font-weight:700;line-height:1;color:rgba(19,19,21,.10);font-variation-settings:'wdth' 68;
+    background:repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 1px,transparent 1px 8px)}
+  .ghost{position:absolute;top:-12px;left:0;right:0;text-align:center;font-size:150px;
+         font-weight:700;line-height:1;color:rgba(255,255,255,.045);font-variation-settings:'wdth' 68;
          letter-spacing:-.04em;pointer-events:none;user-select:none}
   .shirts{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:var(--s4);width:100%}
   .shirtWrap{position:relative;flex:0 1 auto}
-  .shirtWrap svg{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 14px rgba(0,0,0,.22))}
+  .shirtWrap svg{width:100%;height:auto;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.5))}
   .solo .shirtWrap{width:200px}
   .duo .shirtWrap{width:142px}
   .shirtLabel{font-size:11px;color:var(--on-stage-2);text-align:center;margin-top:var(--s2);
               font-weight:500;font-variant-numeric:tabular-nums;position:relative}
   .team{position:relative;margin-top:var(--s4);text-align:center;color:var(--on-stage);
-        font-size:34px;font-weight:700;letter-spacing:-.035em;line-height:1;font-variation-settings:'wdth' 116}
-  .country{position:relative;margin-top:var(--s2);font-size:12.5px;color:var(--on-stage-2);text-align:center;font-weight:500}
-
-  /* The clip-path goes on the SVG, not on a wrapper div. A wrapper whose only
-     child is absolutely positioned has zero height, and inset(0) on a zero-height
-     box clips the whole thing away. */
+        font-size:34px;font-weight:700;letter-spacing:-.035em;line-height:1;font-variation-settings:'wdth' 114}
+  .country{position:relative;margin-top:var(--s2);font-size:12.5px;color:var(--on-stage-2);
+           text-align:center;font-weight:500}
   .flood{position:absolute;inset:0}
   .flood svg{position:absolute;inset:0;width:100%;clip-path:inset(0 0 0 0)}
   .flood.animate svg{animation:flood .55s cubic-bezier(.2,.7,.3,1) both}
@@ -88,18 +122,19 @@
 
   /* ---------- picker ---------- */
   .picker{margin-top:var(--s4);flex:none}
-  .sv{position:relative;width:100%;height:190px;border-radius:14px;cursor:crosshair;
+  .sv{position:relative;width:100%;height:190px;border-radius:16px;cursor:crosshair;
       touch-action:none;overflow:hidden;border:1px solid var(--edge)}
   .knob{position:absolute;width:30px;height:30px;border-radius:50%;border:3px solid #fff;
-        box-shadow:0 0 0 1px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.45);
+        box-shadow:0 0 0 1px rgba(0,0,0,.5),0 2px 10px rgba(0,0,0,.5);
         transform:translate(-50%,-50%);pointer-events:none}
-  .hue{position:relative;width:100%;height:34px;margin-top:var(--s3);border-radius:10px;
+  .hue{position:relative;width:100%;height:34px;margin-top:var(--s3);border-radius:12px;
        touch-action:none;cursor:pointer;border:1px solid var(--edge);
        background:linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%)}
-  .hueKnob{position:absolute;top:50%;width:18px;height:44px;border-radius:6px;background:#fff;
+  .hueKnob{position:absolute;top:50%;width:18px;height:44px;border-radius:7px;background:#fff;
            box-shadow:0 0 0 1px rgba(0,0,0,.5);transform:translate(-50%,-50%);pointer-events:none}
   .readout{display:flex;align-items:center;gap:var(--s3);margin-top:var(--s4)}
-  .swatch{width:58px;height:58px;border-radius:12px;border:1px solid var(--edge);flex:none}
+  .swatch{width:58px;height:58px;border-radius:14px;border:1px solid var(--edge);flex:none;
+          box-shadow:0 6px 18px rgba(0,0,0,.4)}
   .readoutText{min-width:0}
   .hex{font-size:22px;font-weight:500;font-variant-numeric:tabular-nums;font-family:inherit;
        background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--edge);
@@ -109,25 +144,34 @@
   .numbers{font-size:12px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
   .numbers b{font-weight:500;color:var(--text)}
 
+  /* ---------- buttons ---------- */
   button{font:inherit;cursor:pointer;border:0}
-  .btn{width:100%;min-height:54px;padding:var(--s4);border-radius:14px;background:var(--text);
-       color:#0E0E10;font-size:16px;font-weight:700;letter-spacing:-.01em;margin-top:var(--s4);
-       transition:transform .08s ease}
+  .btn{width:100%;min-height:56px;padding:var(--s4);border-radius:16px;background:var(--grad);
+       color:#fff;font-size:16px;font-weight:700;letter-spacing:-.01em;margin-top:var(--s4);
+       box-shadow:0 10px 28px rgba(59,130,246,.30);
+       transition:transform .08s ease,box-shadow .15s ease}
+  .btn:hover{box-shadow:0 14px 34px rgba(59,130,246,.42)}
   .btn:active{transform:scale(.985)}
-  .btn.quiet{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1px var(--edge);font-weight:500}
-  .btn:disabled{opacity:.45;cursor:default}
+  .btn.quiet{background:var(--raise);color:var(--text);border:1px solid var(--hair);
+             box-shadow:none;font-weight:500}
+  .btn.quiet:hover{background:var(--raise2)}
+  .btn:disabled{opacity:.4;cursor:default;box-shadow:none}
   .warn{font-size:13px;color:var(--bad);margin-top:var(--s2);text-align:center}
   :focus-visible{outline:2px solid #fff;outline-offset:3px}
 
-  /* ---------- score ---------- */
+  /* ---------- cards ---------- */
+  .card{background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+        border:1px solid var(--hair);border-radius:var(--radius);
+        box-shadow:0 20px 50px rgba(0,0,0,.45)}
+
   .result{margin-top:var(--s5);flex:none}
   .scoreLine{display:flex;align-items:flex-end;gap:var(--s4)}
   .score{font-size:92px}
   .verdict{font-size:15px;color:var(--muted);padding-bottom:12px;line-height:1.3;max-width:12ch}
   .detail{font-size:13px;color:var(--muted);margin-top:var(--s3);line-height:1.55}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3);margin-top:var(--s5)}
-  .cell{background:var(--raise);border-radius:14px;padding:var(--s3) var(--s2) var(--s2);
-        display:flex;flex-direction:column;align-items:center}
+  .cell{background:var(--raise);border:1px solid var(--hair);border-radius:16px;
+        padding:var(--s3) var(--s2) var(--s2);display:flex;flex-direction:column;align-items:center}
   .cell svg{width:78%;height:auto;display:block;margin-top:var(--s1)}
   .cellName{font-size:11px;font-weight:600;line-height:1.2;text-align:center;
             letter-spacing:-.01em;min-height:2.4em;display:flex;align-items:center}
@@ -135,7 +179,8 @@
   .cellScore{font-size:22px;margin-top:var(--s2);padding-bottom:var(--s1)}
   .legend{font-size:12px;color:var(--muted);margin-top:var(--s3);line-height:1.5}
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);margin-top:var(--s5)}
-  .stat{background:var(--raise);border-radius:14px;padding:var(--s3) var(--s2);text-align:center}
+  .stat{background:var(--raise);border:1px solid var(--hair);border-radius:16px;
+        padding:var(--s3) var(--s2);text-align:center}
   .statNum{font-size:30px}
   .statLabel{font-size:10.5px;color:var(--muted);margin-top:var(--s1);line-height:1.25}
   .countdown{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);
@@ -144,88 +189,157 @@
   .countdownLabel{font-size:12px;color:var(--muted);text-align:right;max-width:10ch;line-height:1.3}
 
   /* ---------- home ---------- */
-  .hero{position:relative;margin-top:var(--s2);height:180px;display:flex;align-items:flex-end;
+  .homeWrap{display:flex;flex-direction:column}
+  .hero{position:relative;margin-top:var(--s4);height:172px;display:flex;align-items:flex-end;
         justify-content:center;overflow:hidden;flex:none}
   .hero .h{width:92px;margin:0 -15px}
-  .hero .h svg{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
-  .homeTitle{font-size:clamp(38px,11.5vw,54px);margin-top:var(--s5)}
-  .homeSub{font-size:15px;color:var(--muted);margin-top:var(--s3);line-height:1.55;max-width:32ch}
-  .menu{display:flex;flex-direction:column;gap:var(--s3);margin-top:var(--s6)}
+  .hero .h svg{width:100%;height:auto;display:block;filter:drop-shadow(0 12px 26px rgba(0,0,0,.6))}
+  .eyebrow{display:inline-flex;align-items:center;gap:var(--s2);align-self:flex-start;
+           background:var(--grad-soft);border:1px solid var(--hair);border-radius:999px;
+           padding:7px var(--s4);font-size:11.5px;font-weight:600;color:var(--text);
+           letter-spacing:.04em;margin-top:var(--s5)}
+  .homeTitle{font-size:clamp(40px,12vw,56px);margin-top:var(--s4)}
+  .homeSub{font-size:15.5px;color:var(--muted);margin-top:var(--s4);line-height:1.6;max-width:34ch}
+  .statPill{display:flex;gap:var(--s2);margin-top:var(--s5);background:var(--glass);
+            backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+            border:1px solid var(--hair);border-radius:18px;padding:var(--s4) var(--s3)}
+  .statPill div{flex:1;text-align:center;border-right:1px solid var(--line)}
+  .statPill div:last-child{border-right:0}
+  .statPill b{display:block;font-size:24px;font-variation-settings:'wdth' 68;font-weight:700;
+              font-variant-numeric:tabular-nums}
+  .statPill span{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+  .menu{display:flex;flex-direction:column;gap:var(--s3);margin-top:var(--s5)}
   .tile{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);
-        background:var(--raise);border-radius:16px;padding:var(--s4) var(--s5);
-        min-height:76px;width:100%;text-align:left;color:var(--text);
-        transition:transform .08s ease,background .12s ease}
+        background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+        border:1px solid var(--hair);border-radius:18px;padding:var(--s4) var(--s5);
+        min-height:80px;width:100%;text-align:left;color:var(--text);
+        transition:transform .08s ease,border-color .15s ease,background .15s ease}
+  .tile:hover{border-color:var(--edge);background:var(--raise)}
   .tile:active{transform:scale(.99)}
-  .tile:hover{background:var(--raise2)}
   .tileName{font-size:19px;font-weight:700;letter-spacing:-.02em}
   .tileNote{font-size:12.5px;color:var(--muted);margin-top:3px}
-  .tileMeta{font-size:26px;flex:none;color:var(--text)}
+  .tile.primary{background:var(--grad);border-color:transparent;
+                box-shadow:0 12px 32px rgba(59,130,246,.30)}
+  .tile.primary:hover{background:var(--grad);box-shadow:0 16px 38px rgba(59,130,246,.42)}
+  .tile.primary .tileNote{color:rgba(255,255,255,.78)}
+  .tileMeta{font-size:26px;flex:none}
   .tileMeta.dim{color:var(--quiet);font-size:12.5px;font-weight:500;max-width:7ch;text-align:right;line-height:1.3}
 
-  /* ---------- sections ---------- */
-  .h2{font-size:26px;font-weight:700;letter-spacing:-.03em;margin-top:var(--s2);font-variation-settings:'wdth' 112}
-  .lede{font-size:13.5px;color:var(--muted);margin-top:var(--s2);line-height:1.55;max-width:36ch}
-  .seg{display:flex;gap:var(--s2);margin-top:var(--s5);background:var(--raise);padding:var(--s1);border-radius:12px}
-  .seg button{flex:1;padding:var(--s3);border-radius:9px;background:transparent;color:var(--muted);
-              font-size:14px;font-weight:500;min-height:44px}
-  .seg button.on{background:var(--text);color:var(--ink);font-weight:700}
+  .features{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s3);margin-top:var(--s6)}
+  .feat{background:var(--raise);border:1px solid var(--hair);border-radius:18px;padding:var(--s4)}
+  .feat i{display:block;width:34px;height:34px;border-radius:11px;background:var(--grad-soft);
+          border:1px solid var(--hair);margin-bottom:var(--s3)}
+  .feat b{display:block;font-size:14px;font-weight:700;letter-spacing:-.01em}
+  .feat span{display:block;font-size:12px;color:var(--muted);margin-top:var(--s2);line-height:1.5}
 
-  /* ---------- filters ---------- */
+  /* ---------- sections ---------- */
+  .h2{font-size:28px;font-weight:700;letter-spacing:-.03em;margin-top:var(--s4);font-variation-settings:'wdth' 110}
+  .lede{font-size:13.5px;color:var(--muted);margin-top:var(--s2);line-height:1.55;max-width:36ch}
+  .seg{display:flex;gap:var(--s2);margin-top:var(--s5);background:var(--raise);padding:var(--s1);
+       border:1px solid var(--hair);border-radius:14px}
+  .seg button{flex:1;padding:var(--s3);border-radius:11px;background:transparent;color:var(--muted);
+              font-size:14px;font-weight:500;min-height:44px}
+  .seg button.on{background:var(--grad);color:#fff;font-weight:700}
+
   .filterGroup{margin-top:var(--s5)}
-  .filterTitle{font-size:11.5px;color:var(--muted);margin-bottom:var(--s3)}
+  .filterTitle{font-size:11.5px;color:var(--muted);margin-bottom:var(--s3);letter-spacing:.02em}
   .chipRow{display:flex;flex-wrap:wrap;gap:var(--s2)}
   .chip{padding:10px var(--s4);border-radius:999px;background:var(--raise);color:var(--text);
-        font-size:13.5px;min-height:44px;box-shadow:inset 0 0 0 1px transparent}
-  .chip.on{background:var(--text);color:var(--ink);font-weight:700}
+        border:1px solid var(--hair);font-size:13.5px;min-height:44px}
+  .chip:hover{border-color:var(--edge)}
+  .chip.on{background:var(--grad);color:#fff;font-weight:700;border-color:transparent}
   .chip small{color:var(--muted);margin-left:6px;font-size:11.5px}
-  .chip.on small{color:rgba(14,14,16,.55)}
+  .chip.on small{color:rgba(255,255,255,.7)}
   .poolNote{font-size:13px;color:var(--muted);margin-top:var(--s4)}
 
-  /* ---------- leaderboard ---------- */
   .board{margin-top:var(--s4);border-top:1px solid var(--line)}
-  .bRow{display:flex;align-items:center;gap:var(--s4);padding:var(--s3) 2px;border-bottom:1px solid var(--line)}
-  .bRow.you{background:var(--raise);border-radius:10px;padding-left:var(--s3);padding-right:var(--s3)}
+  .bRow{display:flex;align-items:center;gap:var(--s4);padding:var(--s3) var(--s2);border-bottom:1px solid var(--line)}
+  .bRow.you{background:var(--grad-soft);border-radius:12px;border-bottom-color:transparent}
   .bRank{font-size:18px;width:2.4ch;flex:none;color:var(--quiet)}
   .bName{flex:1;min-width:0;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .bScore{font-size:19px;flex:none}
-  .empty{background:var(--raise);border-radius:16px;padding:var(--s5);margin-top:var(--s4);
-         font-size:13.5px;color:var(--muted);line-height:1.6}
-  .field{width:100%;background:var(--raise);border:1px solid var(--edge);border-radius:12px;
-         padding:var(--s4);font:inherit;font-size:16px;color:var(--text);min-height:54px;margin-top:var(--s3)}
+  .empty{background:var(--raise);border:1px solid var(--hair);border-radius:18px;padding:var(--s5);
+         margin-top:var(--s4);font-size:13.5px;color:var(--muted);line-height:1.6}
+  .field{width:100%;background:var(--raise);border:1px solid var(--hair);border-radius:14px;
+         padding:var(--s4);font:inherit;font-size:16px;color:var(--text);min-height:56px;margin-top:var(--s3)}
+  .field:focus{outline:none;border-color:var(--edge)}
   .field::placeholder{color:var(--quiet)}
-  .code{font-variation-settings:'wdth' 68;font-weight:700;font-size:30px;letter-spacing:.12em;
-        text-align:center;background:var(--raise);border-radius:14px;padding:var(--s4);margin-top:var(--s3)}
+  .code{font-variation-settings:'wdth' 68;font-weight:700;font-size:34px;letter-spacing:.14em;
+        text-align:center;background:var(--grad-soft);border:1px solid var(--hair);
+        border-radius:18px;padding:var(--s4);margin-top:var(--s3)}
 
-  /* ---------- profile ---------- */
   .pHead{display:flex;align-items:center;gap:var(--s4);margin-top:var(--s4)}
-  .pAvatar{width:64px;height:64px;flex:none;border-radius:16px;background:var(--raise);
-           display:flex;align-items:center;justify-content:center;font-size:26px}
+  .pAvatar{width:68px;height:68px;flex:none;border-radius:20px;background:var(--grad);
+           display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;
+           box-shadow:0 10px 26px rgba(59,130,246,.3)}
   .pName{font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
   .pEdit{background:none;color:var(--muted);font-size:12.5px;padding:6px 0;margin-top:2px}
-  .bigStat{background:var(--raise);border-radius:16px;padding:var(--s5);margin-top:var(--s4)}
+  .bigStat{background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+           border:1px solid var(--hair);border-radius:20px;padding:var(--s5);margin-top:var(--s4)}
   .bigStatNum{font-size:60px}
   .bigStatLabel{font-size:12.5px;color:var(--muted);margin-top:var(--s2)}
   .streakBar{display:flex;gap:4px;margin-top:var(--s4)}
-  .streakSeg{height:34px;flex:1;border-radius:5px;background:var(--line)}
-  .streakSeg.on{background:var(--text)}
-  /* History uses one hue at varying intensity, never a red-to-green ramp:
-     the players most likely to misread that are the ones this game is hardest for. */
+  .streakSeg{height:34px;flex:1;border-radius:6px;background:var(--line)}
+  .streakSeg.on{background:var(--grad)}
+  /* Red through to green, with lightness climbing across the ramp as well
+     (L* 28 to 92). Anyone who cannot separate the hues still reads it as
+     dark-to-light rather than losing the scale entirely. */
   .heat{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-top:var(--s4)}
-  .day{aspect-ratio:1;border-radius:4px;background:var(--raise2)}
+  .day{aspect-ratio:1;border-radius:4px;background:var(--raise)}
   .scale{display:flex;align-items:center;gap:6px;margin-top:var(--s3);font-size:11px;color:var(--muted)}
-  .scale i{width:14px;height:14px;border-radius:3px;display:block}
+  .scale i{width:14px;height:14px;border-radius:4px;display:block}
+
+  .doc{margin-top:var(--s4);max-width:62ch}
+  .doc h2{font-size:15px;font-weight:700;letter-spacing:-.01em;margin-top:var(--s5)}
+  .doc p{font-size:14px;color:var(--muted);line-height:1.65;margin-top:var(--s3)}
+  .doc ul{margin:var(--s3) 0 0 1.1em}
+  .doc li{font-size:14px;color:var(--muted);line-height:1.65;margin-top:var(--s2)}
+  .doc strong{color:var(--text);font-weight:600}
+  .stamp{font-size:12px;color:var(--quiet);margin-top:var(--s4)}
 
   .spacer{flex:1;min-height:var(--s4)}
-  footer{padding:var(--s4) 2px 26px;font-size:11px;color:var(--quiet);flex:none;line-height:1.5}
+  footer{padding:var(--s4) 2px 0;font-size:11px;color:var(--quiet);flex:none;line-height:1.5}
+  .siteFoot{flex:none;margin-top:var(--s5);padding:var(--s5) 2px calc(28px + env(safe-area-inset-bottom));
+            border-top:1px solid var(--line)}
+  .siteFoot nav{display:flex;flex-wrap:wrap;gap:var(--s4)}
+  .siteFoot button{background:none;color:var(--muted);font-size:12.5px;padding:var(--s2) 0;
+                   min-height:36px;text-align:left}
+  .siteFoot button:hover{color:var(--text)}
+  .siteFoot p{margin-top:var(--s2);font-size:11px;color:var(--quiet)}
 
+  /* ---------- desktop ---------- */
+  @media (min-width:900px){
+    body{padding:0 var(--s6)}
+    #app{max-width:1180px}
+    .navlinks{display:flex}
+    .topbar{padding:var(--s3) var(--s5)}
+    .homeWrap{display:grid;grid-template-columns:1.05fr .95fr;gap:var(--s7);align-items:center;
+              margin-top:var(--s7)}
+    .hero{order:2;height:300px;align-items:center}
+    .hero .h{width:132px;margin:0 -20px}
+    .homeTitle{font-size:60px}
+    .homeSub{font-size:17px;max-width:30ch}
+    .eyebrow{margin-top:0}
+    .menu{flex-direction:row;flex-wrap:wrap;margin-top:var(--s7)}
+    .menu .tile{flex:1;min-width:210px}
+    .features{grid-template-columns:repeat(4,1fr);margin-top:var(--s7)}
+    .grid{grid-template-columns:repeat(7,1fr)}
+    .picker{max-width:620px;margin-left:auto;margin-right:auto}
+    .stage{padding:var(--s6) var(--s5) var(--s5)}
+    .solo .shirtWrap{width:250px}
+    .duo .shirtWrap{width:190px}
+    .team{font-size:42px}
+    .doc{margin-left:auto;margin-right:auto}
+  }
   @media (max-width:360px){
     .grid{grid-template-columns:repeat(2,1fr)}
     .score{font-size:76px}
     .heat{grid-template-columns:repeat(10,1fr)}
+    .features{grid-template-columns:1fr}
   }
   @media (prefers-reduced-motion: reduce){
     *{transition:none !important}
-    .animate .top{animation:none;clip-path:inset(0 0 0 0)}
+    .flood.animate svg{animation:none;clip-path:inset(0 0 0 0)}
     .timerTrack{display:none}
   }
 </style>
@@ -2190,7 +2304,7 @@ const todayISO = isoDay(today);
 
 let state = {
   screen:'home', mode:'daily', round:[], index:0, results:[], roundStart:0,
-  filters:new Set(), boardTab:'global', activeBoard:null, notice:'',
+  filters:new Set(), boardTab:'global', activeBoard:null, notice:'', lobby:null,
   h:0, s:0, v:0.5, touched:false, armed:false,
   timeLeft:SECONDS_PER_KIT, ticker:null, clock:null
 };
@@ -2325,6 +2439,17 @@ function finishRound(){
                    results: state.results.map(r => ({kit:r.kit, guess:r.guess, dE:r.dE,
                      accuracy:r.accuracy, bonus:r.bonus, total:r.total}))};
     saveStore();
+  } else if (state.mode === 'lobby' && state.lobby){
+    state.freeMs = ms;
+    state.screen = 'done';
+    // Show the result straight away rather than blocking on the network, then
+    // redraw once the score has actually landed so the player sees themselves
+    // on their own board. Against a real API the write is not instant.
+    render();
+    Lobby.submit(state.lobby.code, state.lobby.me, total, ms).then(() => {
+      if (state.screen === 'done' && state.mode === 'lobby') render();
+    });
+    return;
   } else {
     state.freeMs = ms;
   }
@@ -2339,15 +2464,38 @@ function finishRound(){
    looks nothing like the play screen.
    ============================================================ */
 function bar(right, backTo){
+  // The nav links only render above 900px; on mobile the wordmark and the tile
+  // menu are the navigation, so nothing is unreachable either way.
   return `<div class="topbar">
-    <button class="wordmark" id="homeBtn" aria-label="FourFourTone home">FourFourTone</button>
+    <button class="wordmark" id="homeBtn" aria-label="FourFourTone home">
+      <i aria-hidden="true"></i><span>FourFour<span class="tint">Tone</span></span>
+    </button>
+    <div class="navlinks">
+      <button data-go="home">Home</button>
+      <button data-go="profile">Profile</button>
+      <button data-go="boards">Leaderboards</button>
+      <button class="cta" data-go="play">Play now</button>
+    </div>
     ${backTo ? `<button class="back" data-go="${backTo}">Back</button>`
              : `<div class="counter">${right || ''}</div>`}
   </div>`;
 }
+const SITE_FOOTER = `
+  <div class="siteFoot">
+    <nav aria-label="Site">
+      <button data-go="about">About</button>
+      <button data-go="privacy">Privacy policy</button>
+      <button data-go="terms">Terms of service</button>
+    </nav>
+    <p>&copy; 2026 FourFourTone. All rights reserved.</p>
+  </div>`;
+
 function wireBar(){
   const h = document.getElementById('homeBtn');
   if (h) h.onclick = () => go('home');
+  // Appended here rather than inside every screen, so it cannot be forgotten
+  // on a new one. wireBar runs after every render, sync or async.
+  if (!app.querySelector('.siteFoot')) app.insertAdjacentHTML('beforeend', SITE_FOOTER);
   app.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
 }
 function pips(){
@@ -2361,9 +2509,11 @@ const stageHead = kit => `<h1 class="team">${kit.team}</h1>
   <p class="country">${kit.country}, ${kit.season} ${kit.type}</p>`;
 
 function render(){
-  stopClock();
+  stopClock(); stopPoll();
   const out = ({home:renderHome, play:renderPlay, freeplay:renderFreeplay, playing:renderPlaying,
-    revealed:renderRevealed, done:renderDone, boards:renderBoards, profile:renderProfile}
+    revealed:renderRevealed, done:renderDone, boards:renderBoards, profile:renderProfile,
+    lobby:renderLobby, lobbySetup:renderLobbySetup, lobbyRoom:renderLobbyRoom,
+    about:renderAbout, privacy:renderPrivacy, terms:renderTerms}
   )[state.screen]();
   out && out.then ? out.then(wireBar) : wireBar();
 }
@@ -2379,13 +2529,24 @@ function heroFan(){
   }).join('');
 }
 function renderHome(){
+  const avg = store.played ? Math.round(store.totalScore / store.played) : 0;
   app.innerHTML = `
     ${bar('No. ' + puzzleNo(today))}
-    <div class="hero" aria-hidden="true">${heroFan()}</div>
-    <h1 class="display homeTitle">Seven shirts.<br>Guess the colour.</h1>
-    <p class="homeSub">The club, the season and the pattern are yours. The colour is hatched out.</p>
+    <div class="homeWrap">
+      <div>
+        <span class="eyebrow">Daily challenge</span>
+        <h1 class="display homeTitle">Seven shirts.<br>Guess the <span class="tint">colour</span>.</h1>
+        <p class="homeSub">The club, the season and the pattern are yours. The colour is hatched out.</p>
+        <div class="statPill">
+          <div><b class="numeral">${store.streak}</b><span>Streak</span></div>
+          <div><b class="numeral">${store.maxStreak}</b><span>Best streak</span></div>
+          <div><b class="numeral">${avg}</b><span>Average</span></div>
+        </div>
+      </div>
+      <div class="hero" aria-hidden="true">${heroFan()}</div>
+    </div>
     <div class="menu">
-      <button class="tile" data-go="play">
+      <button class="tile primary" data-go="play">
         <span><span class="tileName">Play</span>
           <span class="tileNote">${dailyDone() ? 'Today is done' : "Today's game is waiting"}</span></span>
         <span class="tileMeta numeral">${store.streak || ''}</span>
@@ -2399,8 +2560,14 @@ function renderHome(){
           <span class="tileNote">${store.name || 'Set a name'}</span></span>
       </button>
     </div>
+    <div class="features">
+      <div class="feat"><i></i><b>Real clubs</b><span>${KITS.length} kits from classic shirts to last season.</span></div>
+      <div class="feat"><i></i><b>Daily challenge</b><span>A new round every day. Same seven for everyone.</span></div>
+      <div class="feat"><i></i><b>Track your progress</b><span>Streaks, history and where you rank.</span></div>
+      <div class="feat"><i></i><b>Play your friends</b><span>Custom lobbies for up to ${LOBBY_MAX} players.</span></div>
+    </div>
     <div class="spacer"></div>
-    <footer>${KITS.length} kits in rotation. Scored on perceptual colour distance.
+    <footer>Scored on perceptual colour distance, so a near miss still counts.
       ${storageWorks ? '' : 'Storage is blocked, so nothing is saved.'}</footer>`;
 }
 
@@ -2421,6 +2588,11 @@ function renderPlay(){
         <span><span class="tileName">Freeplay</span>
           <span class="tileNote">Pick the leagues and nations you want</span></span>
         <span class="tileMeta dim">Set up</span>
+      </button>
+      <button class="tile" data-go="lobby">
+        <span><span class="tileName">Custom lobby</span>
+          <span class="tileNote">Same seven shirts for up to ${LOBBY_MAX} friends</span></span>
+        <span class="tileMeta dim">Create<br>or join</span>
       </button>
     </div>
     <div class="spacer"></div>`;
@@ -2577,6 +2749,7 @@ function splitShirtSVG(guess, actual){
 </svg>`;
 }
 function renderDone(){
+  if (state.mode === 'lobby' && state.lobby) return renderDoneLobby();
   const daily = state.mode === 'daily';
   const results = state.results;
   const total = results.reduce((a,r) => a + r.total, 0);
@@ -2640,6 +2813,41 @@ async function publishToday(){
   render();
 }
 
+async function renderDoneLobby(){
+  const results = state.results;
+  const total = results.reduce((a,r) => a + r.total, 0);
+  const cells = results.map(r => `<div class="cell">
+      <div class="cellName">${r.kit.team}</div>
+      <div class="cellMeta">${r.kit.season} ${r.kit.type}</div>
+      ${splitShirtSVG(r.guess, r.kit.main)}
+      <div class="cellScore numeral">${r.total}</div></div>`).join('');
+  app.innerHTML = `
+    ${bar('', 'lobby')}
+    <div class="result" style="margin-top:var(--s2)">
+      <div class="scoreLine" role="status">
+        <div class="score numeral" id="bigScore">${reduceMotion ? total : 0}</div>
+        <div class="verdict">out of ${maxScore()}</div>
+      </div>
+      <div class="grid">${cells}</div>
+      <p class="legend">Left half is the colour you picked. Right half is the shirt.</p>
+      ${await renderLobbyBoard()}
+      <button class="btn quiet" id="leaveL">Leave lobby</button>
+    </div>
+    <div class="spacer"></div>`;
+  wireBar();
+  document.getElementById('leaveL').onclick = async () => {
+    stopPoll(); await Lobby.leave(state.lobby.code, state.lobby.me);
+    state.lobby = null; go('lobby');
+  };
+  if (!reduceMotion) countUp(document.getElementById('bigScore'), total, 800);
+  // the board keeps updating as the rest of the lobby finishes
+  poll(async () => {
+    if (state.screen !== 'done' || state.mode !== 'lobby') return stopPoll();
+    const el = app.querySelector('.filterGroup');
+    if (el) el.outerHTML = await renderLobbyBoard();
+  });
+}
+
 /* ---------------- leaderboards ---------------- */
 async function renderBoards(){
   const puzzle = puzzleNo(today);
@@ -2700,6 +2908,14 @@ async function renderBoards(){
 }
 
 /* ---------------- profile ---------------- */
+// Red through to green. Lightness climbs across the ramp as well as hue
+// (L* 28 -> 92), so it still reads as a scale without colour discrimination.
+const HEAT_RAMP = ['#7F1D1D','#C2410C','#EA8C1B','#A3C93A','#BBF7A0'];
+function heatColour(score){
+  const p = Math.min(1, Math.max(0, score / maxScore()));
+  return HEAT_RAMP[Math.min(HEAT_RAMP.length - 1, Math.floor(p * HEAT_RAMP.length))];
+}
+
 function renderProfile(){
   const avg = store.played ? Math.round(store.totalScore / store.played) : 0;
   const initial = (store.name || '?').trim().charAt(0).toUpperCase();
@@ -2711,8 +2927,7 @@ function renderProfile(){
   const days = Array.from({length:70}, (_,i) => {
     const d = isoDay(today - (69-i)*86400000);
     const v = store.history[d];
-    const a = v == null ? 0 : 0.15 + 0.85 * Math.min(1, v / maxScore());
-    return `<div class="day" style="${v == null ? '' : `background:rgba(234,234,236,${a.toFixed(2)})`}"
+    return `<div class="day" style="${v == null ? '' : `background:${heatColour(v)}`}"
                  title="${d}${v == null ? '' : ': ' + v}"></div>`;
   }).join('');
   app.innerHTML = `
@@ -2747,8 +2962,7 @@ function renderProfile(){
       <div class="filterTitle">Last ten weeks</div>
       <div class="heat">${days}</div>
       <div class="scale"><span>Lower</span>
-        <i style="background:rgba(234,234,236,.2)"></i><i style="background:rgba(234,234,236,.45)"></i>
-        <i style="background:rgba(234,234,236,.7)"></i><i style="background:rgba(234,234,236,1)"></i>
+        ${HEAT_RAMP.map(c => `<i style="background:${c}"></i>`).join('')}
         <span>Higher</span></div>
     </div>
     <div class="spacer"></div>
@@ -2761,6 +2975,315 @@ function renderProfile(){
     store.name = (document.getElementById('nameInput').value || '').trim();
     saveStore(); render();
   };
+}
+
+/* ============================================================
+   CUSTOM LOBBIES
+   Every call goes through Lobby. This implementation keeps state in
+   localStorage, so host and players must share one browser — it proves the
+   flow, it is not multiplayer. Swap these seven functions for fetch() calls
+   and nothing else in the file changes.
+
+   The round itself is never transmitted. Both ends derive it from the lobby
+   code plus the host's filters, so the server only ever stores who is in the
+   lobby and what they scored.
+   ============================================================ */
+const LOBBY_KEY = 'fourfourtone.lobbies.v1';
+const LOBBY_MAX = 50;
+const POLL_MS = 2000;
+
+const Lobby = {
+  _read(){ try { return JSON.parse(localStorage.getItem(LOBBY_KEY)) || {}; } catch(e){ return {}; } },
+  _write(d){ try { localStorage.setItem(LOBBY_KEY, JSON.stringify(d)); } catch(e){} },
+  newCode(){
+    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no I/O/0/1
+    return Array.from({length:6}, () => abc[Math.floor(Math.random()*abc.length)]).join('');
+  },
+  async create(host, filters){
+    const d = this._read();
+    const code = this.newCode();
+    d[code] = {code, host, filters, started:false, startedAt:null,
+               players:[{name:host, score:null, ms:null, done:false}]};
+    this._write(d);
+    return d[code];
+  },
+  async get(code){ return this._read()[code] || null; },
+  async join(code, name){
+    const d = this._read(), L = d[code];
+    if (!L) return {error:'No lobby with that code.'};
+    if (L.started) return {error:'That lobby has already started.'};
+    if (L.players.length >= LOBBY_MAX) return {error:'That lobby is full.'};
+    if (L.players.some(p => p.name.toLowerCase() === name.toLowerCase()))
+      return {error:'Someone in the lobby already has that name.'};
+    L.players.push({name, score:null, ms:null, done:false});
+    this._write(d);
+    return {lobby:L};
+  },
+  async start(code){
+    const d = this._read(), L = d[code];
+    if (!L) return null;
+    L.started = true; L.startedAt = Date.now();
+    this._write(d);
+    return L;
+  },
+  async submit(code, name, score, ms){
+    const d = this._read(), L = d[code];
+    if (!L) return null;
+    const p = L.players.find(p => p.name === name);
+    if (p){ p.score = score; p.ms = ms; p.done = true; }
+    this._write(d);
+    return L;
+  },
+  async leave(code, name){
+    const d = this._read(), L = d[code];
+    if (!L) return;
+    L.players = L.players.filter(p => p.name !== name);
+    if (!L.players.length) delete d[code];
+    this._write(d);
+  }
+};
+
+// Both ends build the same seven kits from the code and the host's filters.
+function lobbyRound(L){
+  const set = new Set(L.filters || []);
+  let anyNation = false, anyEra = false;
+  set.forEach(f => { if (f[0] === 'N') anyNation = true; else anyEra = true; });
+  const pool = (!anyNation && !anyEra) ? KITS : KITS.filter(k =>
+    (!anyNation || set.has('N:' + nationOf(k))) &&
+    (!anyEra    || set.has('E:' + decadeOf(k))));
+  return buildRound(pool, mulberry32(hashStr('lobby:' + L.code)));
+}
+
+let pollTimer = null;
+function stopPoll(){ if (pollTimer) clearInterval(pollTimer); pollTimer = null; }
+function poll(fn){ stopPoll(); pollTimer = setInterval(fn, POLL_MS); }
+
+/* ---------------- lobby: entry ---------------- */
+function renderLobby(){
+  app.innerHTML = `
+    ${bar('', 'play')}
+    <h1 class="h2">Custom lobby</h1>
+    <p class="lede">Everyone in the lobby plays the same seven shirts. Up to ${LOBBY_MAX} players.</p>
+    <div class="menu">
+      <button class="tile" data-go="lobbySetup">
+        <span><span class="tileName">Create a lobby</span>
+          <span class="tileNote">Pick the filters, share the code</span></span>
+        <span class="tileMeta dim">Host</span>
+      </button>
+    </div>
+    <div class="filterGroup">
+      <div class="filterTitle">Join with a code</div>
+      <input class="field" id="joinCode" maxlength="6" placeholder="Six-character code"
+             style="text-transform:uppercase" aria-label="Lobby code">
+      <input class="field" id="joinName" maxlength="18" value="${store.name || ''}"
+             placeholder="Your name" aria-label="Your name">
+      <button class="btn quiet" id="doJoin">Join lobby</button>
+    </div>
+    ${state.notice ? `<p class="warn">${state.notice}</p>` : ''}
+    <div class="spacer"></div>`;
+  document.getElementById('doJoin').onclick = async () => {
+    const code = (document.getElementById('joinCode').value || '').trim().toUpperCase();
+    const name = (document.getElementById('joinName').value || '').trim();
+    if (name.length < 2){ state.notice = 'Pick a name of at least two characters.'; return render(); }
+    const res = await Lobby.join(code, name);
+    if (res.error){ state.notice = res.error; return render(); }
+    store.name = name; saveStore();
+    state.lobby = {code, me:name, isHost:false};
+    go('lobbyRoom');
+  };
+}
+
+/* ---------------- lobby: host picks the pool ---------------- */
+function renderLobbySetup(){
+  const pool = filteredPool();
+  const ok = poolViable(pool);
+  const chips = list => list.map(f =>
+    `<button class="chip ${state.filters.has(f.key) ? 'on' : ''}" data-f="${f.key}">
+       ${f.label}<small>${f.n}</small></button>`).join('');
+  app.innerHTML = `
+    ${bar('', 'lobby')}
+    <h1 class="h2">Create a lobby</h1>
+    <div class="filterGroup">
+      <div class="filterTitle">Nations, most kits first</div>
+      <div class="chipRow">${chips(nationKeys())}</div>
+    </div>
+    <div class="filterGroup">
+      <div class="filterTitle">Eras</div>
+      <div class="chipRow">${chips(eraKeys())}</div>
+    </div>
+    <p class="poolNote">${pool.length} kits from ${new Set(pool.map(k => k.team)).size} clubs${ok ? '' :
+      ' \u2014 not enough variety for a round of ' + ROUND_LENGTH + '. Add another filter.'}</p>
+    <input class="field" id="hostName" maxlength="18" value="${store.name || ''}"
+           placeholder="Your name" aria-label="Your name">
+    <button class="btn" id="makeLobby" ${ok ? '' : 'disabled'}>Create lobby</button>
+    ${state.notice ? `<p class="warn">${state.notice}</p>` : ''}
+    <div class="spacer"></div>`;
+  app.querySelectorAll('[data-f]').forEach(b => b.onclick = () => {
+    const k = b.dataset.f;
+    state.filters.has(k) ? state.filters.delete(k) : state.filters.add(k);
+    render();
+  });
+  document.getElementById('makeLobby').onclick = async () => {
+    const name = (document.getElementById('hostName').value || '').trim();
+    if (name.length < 2){ state.notice = 'Pick a name of at least two characters.'; return render(); }
+    store.name = name; saveStore();
+    const L = await Lobby.create(name, [...state.filters]);
+    state.lobby = {code:L.code, me:name, isHost:true};
+    go('lobbyRoom');
+  };
+}
+
+/* ---------------- lobby: the waiting room ---------------- */
+async function renderLobbyRoom(){
+  const L = await Lobby.get(state.lobby.code);
+  if (!L){ state.notice = 'That lobby has closed.'; state.lobby = null; return go('lobby'); }
+  // A player whose host has started drops straight into the round on the next poll.
+  if (L.started && state.screen === 'lobbyRoom'){ stopPoll(); return beginLobbyRound(L); }
+  const me = state.lobby.me;
+  app.innerHTML = `
+    ${bar('', 'lobby')}
+    <h1 class="h2">Lobby</h1>
+    <div class="code" id="lobbyCode">${L.code}</div>
+    <p class="lede">Share this code. ${L.players.length} of ${LOBBY_MAX} players in.</p>
+    <div class="board">${L.players.map((p,i) => `
+      <div class="bRow ${p.name === me ? 'you' : ''}">
+        <div class="bRank numeral">${i+1}</div>
+        <div class="bName">${p.name}${p.name === L.host ? ' (host)' : ''}</div>
+      </div>`).join('')}</div>
+    ${state.lobby.isHost
+      ? `<button class="btn" id="startGame">Start game</button>`
+      : `<p class="poolNote">Waiting for ${L.host} to start.</p>`}
+    <button class="btn quiet" id="leave">Leave lobby</button>
+    <div class="spacer"></div>`;
+  wireBar();
+  const s = document.getElementById('startGame');
+  if (s) s.onclick = async () => { stopPoll(); await Lobby.start(L.code); beginLobbyRound(await Lobby.get(L.code)); };
+  document.getElementById('leave').onclick = async () => {
+    stopPoll(); await Lobby.leave(L.code, me); state.lobby = null; go('lobby');
+  };
+  poll(() => { if (state.screen === 'lobbyRoom') renderLobbyRoom(); });
+}
+
+function beginLobbyRound(L){
+  state.mode = 'lobby';
+  state.round = lobbyRound(L);
+  beginRound();
+}
+
+/* ---------------- lobby: live results ---------------- */
+async function renderLobbyBoard(){
+  const L = await Lobby.get(state.lobby.code);
+  const rows = (L ? L.players : []).slice().sort((a,b) =>
+    (b.done - a.done) || (b.score - a.score) || (a.ms - b.ms));
+  const finished = rows.filter(p => p.done).length;
+  return `
+    <div class="filterGroup">
+      <div class="filterTitle">Lobby ${state.lobby.code} \u00B7 ${finished} of ${rows.length} finished</div>
+      <div class="board">${rows.map((p,i) => `
+        <div class="bRow ${p.name === state.lobby.me ? 'you' : ''}">
+          <div class="bRank numeral">${p.done ? i+1 : '\u2013'}</div>
+          <div class="bName">${p.name}</div>
+          <div class="bScore numeral">${p.done ? p.score : '<span style="font-size:12px;color:var(--muted)">playing</span>'}</div>
+        </div>`).join('')}</div>
+    </div>`;
+}
+
+/* ---------------- about, privacy, terms ---------------- */
+const UPDATED = 'September 2026';
+
+function renderAbout(){
+  app.innerHTML = `
+    ${bar('', 'home')}
+    <h1 class="h2">About</h1>
+    <div class="doc">
+      <p>FourFourTone is a daily colour game. You get a club, a season and whether the
+         shirt was a home or away kit. The colour is hatched out, and you have to pick it.</p>
+      <h2>How scoring works</h2>
+      <p>Guesses are scored on <strong>perceptual</strong> colour distance using CIEDE2000,
+         not on how close the hex codes look. That means a near miss still earns most of the
+         points, while a genuinely different colour earns none however fast you locked it in.</p>
+      <p>The lightness term is deliberately weighted down. Your screen brightness is unknown
+         and unknowable, and a correct hue judged on a dim phone should not be scored as a miss.</p>
+      <h2>The shirts</h2>
+      <p>Every shirt is drawn here as original vector artwork from a colour, a pattern and a
+         silhouette. No club photography, crests, sponsor marks or manufacturer logos are used
+         anywhere in the game.</p>
+      <p>Club and country names appear descriptively, to identify which shirt is being asked
+         about. FourFourTone is not affiliated with, endorsed by or licensed by any club,
+         league, federation or kit manufacturer.</p>
+      <h2>The colours</h2>
+      <p>Kit colours are approximations. They are close enough to play with and are being
+         checked against kit archives over time, but they are not authoritative reference
+         values, and some are still unverified. If you spot one that is wrong, it probably is.</p>
+    </div>
+    <div class="spacer"></div>`;
+}
+
+function renderPrivacy(){
+  app.innerHTML = `
+    ${bar('', 'home')}
+    <h1 class="h2">Privacy policy</h1>
+    <div class="doc">
+      <p><strong>Short version: everything stays in your browser.</strong> There are no accounts,
+         no analytics, no advertising and no tracking of any kind.</p>
+      <h2>What is stored</h2>
+      <p>Your streak, scores, round history, chosen name and any lobby or leaderboard codes are
+         saved in your browser's local storage on this device. They are not sent anywhere.</p>
+      <ul>
+        <li>No cookies are set.</li>
+        <li>No analytics or advertising scripts run.</li>
+        <li>No IP addresses, device identifiers or behavioural data are collected by us.</li>
+      </ul>
+      <h2>Third parties</h2>
+      <p>The page loads a typeface from Google Fonts, which means your browser makes a request
+         to Google's servers and Google may log that request. Nothing else is fetched from a
+         third party.</p>
+      <p>If the site is hosted on a service such as GitHub Pages, that host keeps its own server
+         logs under its own privacy terms.</p>
+      <h2>Deleting your data</h2>
+      <p>Clearing your browser's site data for this domain erases everything the game has stored.
+         There is no copy held elsewhere to request or delete.</p>
+      <h2>When leaderboards go live</h2>
+      <p>Published leaderboard scores and custom lobbies will transmit the name you choose and
+         your score to a server. Do not use your real name if you would rather not be
+         identifiable. This section will be updated before that feature is switched on.</p>
+      <p class="stamp">Last updated ${UPDATED}.</p>
+    </div>
+    <div class="spacer"></div>`;
+}
+
+function renderTerms(){
+  app.innerHTML = `
+    ${bar('', 'home')}
+    <h1 class="h2">Terms of service</h1>
+    <div class="doc">
+      <p>By using FourFourTone you agree to these terms. If you do not, please do not use the site.</p>
+      <h2>The game is provided as it is</h2>
+      <p>FourFourTone is offered free of charge and without warranty of any kind. It may be
+         unavailable, change, or be withdrawn at any time. Scores, streaks and history are stored
+         on your own device and can be lost if you clear your browser data or switch device.</p>
+      <h2>Accuracy</h2>
+      <p>Kit colours, seasons and patterns are approximations compiled from public sources and
+         may contain errors. Nothing here should be treated as an authoritative record of any
+         club's kit history.</p>
+      <h2>Trade marks</h2>
+      <p>Club, league and country names are used descriptively to identify the shirt in question.
+         All trade marks remain the property of their owners. FourFourTone is independent and is
+         not affiliated with, endorsed by or licensed by any club, league, federation or kit
+         manufacturer. No crests, sponsor marks or manufacturer logos are reproduced.</p>
+      <h2>Leaderboards and lobbies</h2>
+      <p>Choose a name that is not offensive, impersonating, or identifying of someone else.
+         Entries may be removed, and access withdrawn, where a name or behaviour is abusive or
+         where scores appear to be manipulated.</p>
+      <h2>Our content</h2>
+      <p>The game, its artwork, code and compiled kit dataset are the property of FourFourTone.
+         You may play and share your results. You may not copy the dataset or reproduce the site
+         for commercial use without permission.</p>
+      <h2>Governing law</h2>
+      <p>These terms are governed by the law of England and Wales.</p>
+      <p class="stamp">Last updated ${UPDATED}.</p>
+    </div>
+    <div class="spacer"></div>`;
 }
 
 /* ---------------- countdown + share ---------------- */
